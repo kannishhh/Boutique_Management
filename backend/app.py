@@ -15,8 +15,10 @@ from utils import is_valid_date
 from auth import login_user, token_required, logout_user
 from database import init_db
 from flask import send_file
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 init_db()
 
