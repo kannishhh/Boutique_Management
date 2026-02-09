@@ -6,21 +6,31 @@ from utils import is_valid_mobile
 # CREATE CUSTOMER (DB)
 # ---------------------------
 def create_customer_db(name, mobile, address, measurements):
-    if not name or not is_valid_mobile(mobile):
-        return None, "Invalid input"
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
 
-    conn = get_connection()
-    cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO customers (name, mobile, address, measurements)
+            VALUES (%s, %s, %s, %s)
+            """,
+            (
+                name.strip(),
+                mobile.strip(),
+                address.strip() if address else "",
+                measurements.strip() if measurements else "",
+            ),
+        )
 
-    cursor.execute(
-        "INSERT INTO customers (name, mobile, address, measurements) VALUES (%s, %s, %s, %s)",
-        (name, mobile, address, measurements),
-    )
+        conn.commit()
+        conn.close()
 
-    conn.commit()
-    conn.close()
+        return True, "Customer created successfully"
 
-    return True, "Customer created"
+    except Exception as e:
+        print("DB ERROR:", e)
+        return False, "Database error"
 
 
 # ---------------------------
