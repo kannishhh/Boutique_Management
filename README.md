@@ -10,10 +10,31 @@ Backend API: https://boutique-api-0sog.onrender.com
 
 ---
 
+## Screenshots
+
+### Login Page
+
+![Login](screenshots/login.png)
+
+### Customers Management
+
+![Customers](screenshots/customers.png)
+
+### Orders Workflow
+
+![Orders](screenshots/orders.png)
+
+### Reports & Analytics
+
+![Reports](screenshots/reports.png)
+
+---
+
 ## Problem
 
 Small tailoring shops still manage orders using notebooks and memory.
 This causes:
+
 - Lost measurements
 - Forgotten delivery dates
 - No business insights
@@ -26,25 +47,30 @@ This project solves that by providing a cloud-based admin dashboard.
 ## Features
 
 Authentication
+
 - Secure login/logout
 - Token based session management
 
 Customer Management
+
 - Add & search customers
 - Store contact details & measurements
 
 Order Management
+
 - Create stitching orders
 - Track delivery status
 - Payment tracking (advance + balance)
 - Mark orders delivered
 
 Reports Dashboard
+
 - Revenue analytics
 - Pending balance tracking
 - CSV export for accounting
 
 User Experience
+
 - Toast notifications
 - Form validation
 - Search & filtering
@@ -52,21 +78,35 @@ User Experience
 
 ---
 
+## Project Highlights
+
+- Built for a real boutique business workflow
+- Full CRUD + authentication + reports
+- Migrated from SQLite → PostgreSQL (cloud)
+- Deployed full stack on Render
+- Production-ready environment configuration
+
+---
+
 ## Tech Stack
 
 Frontend
+
 - React (Vite)
 - Tailwind CSS
 - React Hot Toast
 
 Backend
+
 - Python Flask REST API
 - JWT-like token auth
 
 Database
+
 - PostgreSQL (Render Cloud)
 
 Deployment
+
 - Render (Backend + Frontend)
 
 ---

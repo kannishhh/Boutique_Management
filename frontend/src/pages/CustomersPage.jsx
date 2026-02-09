@@ -41,17 +41,29 @@ export default function CustomersPage() {
     e.preventDefault();
 
     if (!validateForm()) return;
-    await apiFetch("/customers", {
-      method: "POST",
-      body: JSON.stringify({ name, mobile, address, measurements }),
-    });
 
-    setName("");
-    setMobile("");
-    setAddress("");
-    setMeasurements("");
-    toast.success("Customer added successfully!");
-    loadCustomers();
+    try {
+      await apiFetch("/customers", {
+        method: "POST",
+        body: JSON.stringify({
+          name,
+          mobile,
+          address,
+          measurements,
+        }),
+      });
+
+      setName("");
+      setMobile("");
+      setAddress("");
+      setMeasurements("");
+      setErrors({});
+
+      toast.success("Customer added successfully!");
+      loadCustomers();
+    } catch (err) {
+      toast.error(err.message);
+    }
   }
 
   useEffect(() => {

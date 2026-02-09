@@ -1,3 +1,4 @@
+import psycopg2
 from database import get_connection
 from utils import is_valid_mobile
 
@@ -27,6 +28,9 @@ def create_customer_db(name, mobile, address, measurements):
         conn.close()
 
         return True, "Customer created successfully"
+
+    except psycopg2.errors.UniqueViolation:
+        return False, "Customer with this mobile already exists"
 
     except Exception as e:
         print("DB ERROR:", e)
