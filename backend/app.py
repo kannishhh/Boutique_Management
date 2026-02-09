@@ -195,8 +195,22 @@ def earnings_report():
 
 
 @app.route("/reports/export/orders", methods=["GET"])
-@token_required
 def export_orders():
+    token = request.headers.get("Authorization")
+
+    if not token:
+        token = request.args.get("token")
+
+    if not token:
+        return jsonify({"error": "Missing token"}), 401
+
+    token = token.replace("Bearer ", "")
+
+    from auth import verify_token
+
+    if not verify_token(token):
+        return jsonify({"error": "Invalid token"}), 401
+
     filename = export_orders_to_csv()
     return send_file(filename, as_attachment=True)
 
