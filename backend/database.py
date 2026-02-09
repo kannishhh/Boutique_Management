@@ -25,7 +25,8 @@ def init_db():
         customer_id SERIAL PRIMARY KEY,
         name TEXT,
         mobile TEXT UNIQUE,
-        address TEXT
+        address TEXT,
+        measurements TEXT
     )
     """
     )
@@ -38,6 +39,7 @@ def init_db():
         customer_name TEXT,
         mobile TEXT,
         suit_type TEXT,
+        cloth_provided BOOLEAN,
         price INTEGER,
         advance_paid INTEGER,
         balance INTEGER,

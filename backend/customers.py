@@ -1,6 +1,5 @@
 import psycopg2
 from database import get_connection
-from utils import is_valid_mobile
 
 
 # ---------------------------
@@ -44,7 +43,9 @@ def get_all_customers_db():
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT customer_id, name, mobile, address FROM customers")
+    cursor.execute(
+        "SELECT customer_id, name, mobile, address, measurements FROM customers ORDER BY customer_id DESC"
+    )
     rows = cursor.fetchall()
     conn.close()
 

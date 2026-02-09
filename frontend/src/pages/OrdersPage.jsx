@@ -3,6 +3,17 @@ import { apiFetch } from "../api/client";
 import Loader from "../components/Loader";
 import toast from "react-hot-toast";
 
+const SUIT_TYPES = [
+  "Kurta Pajama",
+  "Pant Shirt",
+  "3 Piece Suit",
+  "Blazer",
+  "Sherwani",
+  "Lehenga Blouse",
+  "Salwar Suit",
+  "Alteration",
+];
+
 export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -12,6 +23,7 @@ export default function OrdersPage() {
   const [price, setPrice] = useState("");
   const [advance, setAdvance] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
+  const [clothProvided, setClothProvided] = useState(false);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -38,28 +50,41 @@ export default function OrdersPage() {
   async function createOrder(e) {
     e.preventDefault();
 
-    await apiFetch("/orders", {
-      method: "POST",
-      body: JSON.stringify({
-        mobile,
-        suit_type: suitType,
-        price: Number(price),
-        advance_paid: Number(advance),
-        delivery_date: formatDate(deliveryDate),
-      }),
-    });
-
-    if (Number(advance) > Number(price)) {
-      alert("Advance cannot exceed price");
+    if (!mobile || !suitType || !price || !advance || !deliveryDate) {
+      toast.error("Please fill all fields");
       return;
     }
-    setMobile("");
-    setSuitType("");
-    setPrice("");
-    setAdvance("");
-    setDeliveryDate("");
-    toast.success("Order created successfully");
-    loadData();
+
+    if (Number(advance) > Number(price)) {
+      toast.error("Advance cannot exceed price");
+      return;
+    }
+
+    try {
+      await apiFetch("/orders", {
+        method: "POST",
+        body: JSON.stringify({
+          mobile,
+          suit_type: suitType,
+          cloth_provided: clothProvided,
+          price: Number(price),
+          advance_paid: Number(advance),
+          delivery_date: formatDate(deliveryDate),
+        }),
+      });
+
+      setMobile("");
+      setSuitType("");
+      setPrice("");
+      setAdvance("");
+      setDeliveryDate("");
+      setClothProvided(false);
+
+      toast.success("Order created successfully");
+      loadData();
+    } catch (err) {
+      toast.error(err.message);
+    }
   }
 
   async function updateStatus(id, status) {
@@ -105,12 +130,18 @@ export default function OrdersPage() {
             ))}
           </select>
 
-          <input
+          <select
             className="border p-3 rounded-lg"
-            placeholder="Suit Type"
             value={suitType}
             onChange={(e) => setSuitType(e.target.value)}
-          />
+          >
+            <option value="">Select Suit Type</option>
+            {SUIT_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
 
           <input
             type="number"
@@ -137,6 +168,15 @@ export default function OrdersPage() {
             value={deliveryDate}
             onChange={(e) => setDeliveryDate(e.target.value)}
           />
+
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={clothProvided}
+              onChange={(e) => setClothProvided(e.target.checked)}
+            />
+            Customer provided cloth
+          </label>
 
           <button className="col-span-3 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">
             Create Order
@@ -173,10 +213,15 @@ export default function OrdersPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b text-left">
-                <th className="py-3">Customer</th>
-                <th>Suit</th>
+                <th className="py-3">Order ID</th>
+                <th>Customer</th>
+                <th>Mobile</th>
+                <th>Suit Type</th>
+                <th>Cloth Provided</th>
                 <th>Price</th>
+                <th>Advance</th>
                 <th>Balance</th>
+                <th>Delivery Date</th>
                 <th>Status</th>
                 <th>Action</th>
               </tr>
@@ -185,11 +230,26 @@ export default function OrdersPage() {
             <tbody>
               {filteredOrders.map((o) => (
                 <tr key={o.order_id} className="border-b hover:bg-gray-50">
-                  <td className="py-3">{o.customer_name}</td>
+                  <td className="py-3">{o.order_id}</td>
+                  <td>{o.customer_name}</td>
+                  <td>{o.mobile}</td>
                   <td>{o.suit_type}</td>
+                  <td>{o.cloth_provided ? "Customer Cloth" : "Shop Cloth"}</td>
                   <td>₹{o.price}</td>
+                  <td>₹{o.advance_paid}</td>
                   <td>₹{o.balance}</td>
-                  <td>{o.status}</td>
+                  <td>{o.delivery_date}</td>
+                  <td>
+                    <span
+                      className={
+                        o.status === "DELIVERED"
+                          ? "text-green-600 font-semibold"
+                          : "text-orange-600 font-semibold"
+                      }
+                    >
+                      {o.status}
+                    </span>
+                  </td>
                   <td>
                     {o.status !== "DELIVERED" && (
                       <button
