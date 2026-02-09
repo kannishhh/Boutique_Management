@@ -11,6 +11,7 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState({});
   const [search, setSearch] = useState("");
+  const [measurements, setMeasurements] = useState("");
 
   async function loadCustomers() {
     try {
@@ -42,12 +43,13 @@ export default function CustomersPage() {
     if (!validateForm()) return;
     await apiFetch("/customers", {
       method: "POST",
-      body: JSON.stringify({ name, mobile, address }),
+      body: JSON.stringify({ name, mobile, address, measurements }),
     });
 
     setName("");
     setMobile("");
     setAddress("");
+    setMeasurements("");
     toast.success("Customer added successfully!");
     loadCustomers();
   }
@@ -88,6 +90,13 @@ export default function CustomersPage() {
             onChange={(e) => setAddress(e.target.value)}
           />
 
+          <input
+            className="border p-3 rounded-lg"
+            placeholder="Measurements"
+            value={measurements}
+            onChange={(e) => setMeasurements(e.target.value)}
+          />
+
           <button className="col-span-3 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">
             Add Customer
           </button>
@@ -117,6 +126,7 @@ export default function CustomersPage() {
                 <th>Name</th>
                 <th>Mobile</th>
                 <th>Address</th>
+                <th>Measurements</th>
               </tr>
             </thead>
 
@@ -127,6 +137,7 @@ export default function CustomersPage() {
                   <td>{c.name}</td>
                   <td>{c.mobile}</td>
                   <td>{c.address}</td>
+                  <td>{c.measurements || "-"}</td>
                 </tr>
               ))}
             </tbody>
