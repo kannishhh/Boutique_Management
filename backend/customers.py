@@ -13,8 +13,8 @@ def create_customer_db(name, mobile, address, measurements):
     cursor = conn.cursor()
 
     cursor.execute(
-        "INSERT INTO customers (name, mobile, address, measurements) VALUES (?, ?, ?, ?)",
-        (name, mobile, address, measurements)
+        "INSERT INTO customers (name, mobile, address, measurements) VALUES (%s, %s, %s, %s)",
+        (name, mobile, address, measurements),
     )
 
     conn.commit()
@@ -44,7 +44,7 @@ def find_customer_by_mobile(mobile):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM customers WHERE mobile = ?", (mobile,))
+    cursor.execute("SELECT * FROM customers WHERE mobile = %s", (mobile,))
     row = cursor.fetchone()
     conn.close()
 

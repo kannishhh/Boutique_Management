@@ -17,7 +17,7 @@ def create_order_db(order):
             cloth_provided, price, advance_paid, balance,
             delivery_date, status
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
     """,
         (
             order["customer_id"],
@@ -59,7 +59,7 @@ def update_order_status_db(order_id, status):
     cursor = conn.cursor()
 
     cursor.execute(
-        "UPDATE orders SET status = ? WHERE order_id = ?", (status, order_id)
+        "UPDATE orders SET status = %s WHERE order_id = %s", (status, order_id)
     )
 
     conn.commit()
@@ -87,7 +87,7 @@ def get_order_by_id_db(order_id):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM orders WHERE order_id = ?", (order_id,))
+    cursor.execute("SELECT * FROM orders WHERE order_id = %s", (order_id,))
     row = cursor.fetchone()
     conn.close()
 
@@ -143,19 +143,19 @@ def search_orders_db(status=None, mobile=None, delivery_date=None, page=1, limit
     params = []
 
     if status:
-        query += "AND status = ?"
+        query += "AND status = %s"
         params.append(status)
 
     if mobile:
-        query += "AND mobile = ?"
+        query += "AND mobile = %s"
         params.append(mobile)
 
     if delivery_date:
-        query += "AND delivery_date = ?"
+        query += "AND delivery_date = %s"
         params.append(delivery_date)
 
     offset = (page - 1) * limit
-    query += " LIMIT ? OFFSET ?"
+    query += " LIMIT %s OFFSET %s"
     params.extend([limit, offset])
 
     cursor.execute(query, params)
@@ -182,32 +182,34 @@ def export_orders_to_csv():
         writer = csv.writer(file)
 
         # header row
-        writer.writerow([
-            "Order ID",
-            "Customer Name",
-            "Mobile",
-            "Suit Type",
-            "Price",
-            "Advance Paid",
-            "Balance",
-            "Delivery Date",
-            "Status"
-        ])
+        writer.writerow(
+            [
+                "Order ID",
+                "Customer Name",
+                "Mobile",
+                "Suit Type",
+                "Price",
+                "Advance Paid",
+                "Balance",
+                "Delivery Date",
+                "Status",
+            ]
+        )
 
         # data rows
         for r in rows:
-            writer.writerow([
-                r["order_id"],
-                r["customer_name"],
-                r["mobile"],
-                r["suit_type"],
-                r["price"],
-                r["advance_paid"],
-                r["balance"],
-                r["delivery_date"],
-                r["status"]
-            ])
+            writer.writerow(
+                [
+                    r["order_id"],
+                    r["customer_name"],
+                    r["mobile"],
+                    r["suit_type"],
+                    r["price"],
+                    r["advance_paid"],
+                    r["balance"],
+                    r["delivery_date"],
+                    r["status"],
+                ]
+            )
 
     return filename
-
-
