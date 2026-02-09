@@ -125,7 +125,7 @@ def create_order_api():
         "customer_name": customer["name"],
         "mobile": customer["mobile"],
         "suit_type": data["suit_type"],
-        "cloth_provided": data.get("cloth_provided", False),
+        "cloth_provided": bool(data.get("cloth_provided", False)),
         "price": data["price"],
         "advance_paid": data["advance_paid"],
         "balance": data["price"] - data["advance_paid"],

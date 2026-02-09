@@ -24,7 +24,7 @@ def create_order_db(order):
             order["customer_name"],
             order["mobile"],
             order["suit_type"],
-            int(order["cloth_provided"]),
+            bool(order["cloth_provided"]),
             order["price"],
             order["advance_paid"],
             order["balance"],
