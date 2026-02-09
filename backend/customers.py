@@ -30,7 +30,7 @@ def get_all_customers_db():
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT customer_id, name, mobile FROM customers")
+    cursor.execute("SELECT customer_id, name, mobile, address FROM customers")
     rows = cursor.fetchall()
     conn.close()
 
