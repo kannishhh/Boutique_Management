@@ -25,7 +25,13 @@ from flask_cors import CORS
 from routes.measurement_templates import templates_bp
 
 app = Flask(__name__)
-CORS(app)
+CORS(
+    app,
+    resources={r"/*": {"origins": "*"}},
+    supports_credentials=True,
+    allow_headers=["Content-Type", "Authorization"],
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+)
 
 init_db()
 
@@ -35,6 +41,12 @@ app.register_blueprint(templates_bp)
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({"message": "Boutique Management App is running!"})
+
+
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        return "", 200
 
 
 # ---------- AUTH ----------

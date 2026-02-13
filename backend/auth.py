@@ -3,10 +3,8 @@ from functools import wraps
 from flask import request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
+from database import get_connection, is_postgres
 
-
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD_HASH = generate_password_hash("REMOVED_SECRET")
 
 active_tokens = {}
 
@@ -34,18 +32,24 @@ def verify_token(token):
 
 
 def login_user(username, password):
-    if username != ADMIN_USERNAME:
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if is_postgres():
+        cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
+    else:
+        cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+
+    user = cursor.fetchone()
+    conn.close()
+
+    if not user:
         return None
 
-    if not check_password_hash(ADMIN_PASSWORD_HASH, password):
+    if not check_password_hash(user["password_hash"], password):
         return None
 
     return generate_token()
-
-
-def logout_user(token):
-    if token in active_tokens:
-        del active_tokens[token]
 
 
 def token_required(f):
@@ -64,3 +68,8 @@ def token_required(f):
         return f(*args, **kwargs)
 
     return decorated
+
+
+def logout_user(token):
+    if token in active_tokens:
+        del active_tokens[token]

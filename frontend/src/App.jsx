@@ -14,7 +14,7 @@ function App() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    setLoggedIn(!!token);
+    if (token) setLoggedIn(true);
   }, []);
 
   async function logout() {
