@@ -210,20 +210,6 @@ def init_db():
         """
         )
 
-    admin_username = "admin"
-    admin_password = "REMOVED_SECRET"
-    password_hash = generate_password_hash(admin_password)
-
-    if is_postgres():
-        cursor.execute(
-            "INSERT INTO users (username, password_hash) VALUES (%s,%s) ON CONFLICT (username) DO NOTHING",
-            (admin_username, password_hash),
-        )
-    else:
-        cursor.execute(
-            "INSERT OR IGNORE INTO users (username, password_hash) VALUES (?, ?)",
-            (admin_username, password_hash),
-        )
 
     templates = [
         # ================= MEN TOP WEAR =================
