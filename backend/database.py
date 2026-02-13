@@ -5,6 +5,10 @@ from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash
 
 
+def is_postgres():
+    return os.getenv("DATABASE_URL") is not None
+
+
 def get_connection():
     database_url = os.getenv("DATABASE_URL")
 
@@ -20,77 +24,206 @@ def init_db():
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute(
+    # ---------------- USERS ----------------
+    if is_postgres():
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username TEXT UNIQUE,
+                password_hash TEXT
+            )
         """
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE,
-            password_hash TEXT
         )
-    """
-    )
+    else:
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE,
+                password_hash TEXT
+            )
+        """
+        )
 
-    cursor.execute(
+    # ---------------- CUSTOMERS ----------------
+    if is_postgres():
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS customers (
+                customer_id SERIAL PRIMARY KEY,
+                name TEXT,
+                mobile TEXT UNIQUE,
+                address TEXT,
+                measurements TEXT
+            )
         """
-        CREATE TABLE IF NOT EXISTS customers (
-            customer_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            mobile TEXT UNIQUE,
-            address TEXT,
-            measurements TEXT
         )
-    """
-    )
+    else:
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS customers (
+                customer_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT,
+                mobile TEXT UNIQUE,
+                address TEXT,
+                measurements TEXT
+            )
+        """
+        )
 
-    cursor.execute(
+    # ---------------- ORDERS ----------------
+    if is_postgres():
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS orders (
+                order_id SERIAL PRIMARY KEY,
+                customer_id INTEGER,
+                customer_name TEXT,
+                mobile TEXT,
+                suit_type TEXT,
+                cloth_provided BOOLEAN,
+                price INTEGER,
+                advance_paid INTEGER,
+                balance INTEGER,
+                delivery_date TEXT,
+                status TEXT
+            )
         """
-        CREATE TABLE IF NOT EXISTS orders (
-            order_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            customer_id INTEGER,
-            customer_name TEXT,
-            mobile TEXT,
-            suit_type TEXT,
-            cloth_provided BOOLEAN,
-            price INTEGER,
-            advance_paid INTEGER,
-            balance INTEGER,
-            delivery_date TEXT,
-            status TEXT
         )
-    """
-    )
+    else:
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS orders (
+                order_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_id INTEGER,
+                customer_name TEXT,
+                mobile TEXT,
+                suit_type TEXT,
+                cloth_provided BOOLEAN,
+                price INTEGER,
+                advance_paid INTEGER,
+                balance INTEGER,
+                delivery_date TEXT,
+                status TEXT
+            )
+        """
+        )
 
-    cursor.execute(
+    # ---------------- PAYMENTS ----------------
+    if is_postgres():
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS payments (
+                payment_id SERIAL PRIMARY KEY,
+                order_id INTEGER,
+                amount INTEGER,
+                payment_date TEXT,
+                payment_method TEXT
+            )
         """
-        CREATE TABLE IF NOT EXISTS measurement_templates (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            garment_type TEXT UNIQUE,
-            fields_json TEXT
         )
-    """
-    )
+    else:
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS payments (
+                payment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                order_id INTEGER,
+                amount INTEGER,
+                payment_date TEXT,
+                payment_method TEXT
+            )
+        """
+        )
 
-    cursor.execute(
+    # ---------------- REMINDERS ----------------
+    if is_postgres():
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS reminders (
+                reminder_id SERIAL PRIMARY KEY,
+                order_id INTEGER,
+                message TEXT,
+                reminder_date TEXT
+            )
         """
-        CREATE TABLE IF NOT EXISTS measurements (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            customer_id INTEGER,
-            garment_type TEXT,
-            measurement_values TEXT,
-            version_number INTEGER DEFAULT 1,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    """
-    )
+    else:
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS reminders (
+                reminder_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                order_id INTEGER,
+                message TEXT,
+                reminder_date TEXT
+            )
+        """
+        )
+
+    # ---------------- MEASUREMENT TEMPLATES ----------------
+    if is_postgres():
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS measurement_templates (
+                id SERIAL PRIMARY KEY,
+                garment_type TEXT UNIQUE,
+                fields_json TEXT
+            )
+        """
+        )
+    else:
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS measurement_templates (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                garment_type TEXT UNIQUE,
+                fields_json TEXT
+            )
+        """
+        )
+
+    # ---------------- MEASUREMENTS HISTORY ----------------
+    if is_postgres():
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS measurements (
+                id SERIAL PRIMARY KEY,
+                customer_id INTEGER,
+                garment_type TEXT,
+                measurement_values TEXT,
+                version_number INTEGER DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """
+        )
+    else:
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS measurements (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_id INTEGER,
+                garment_type TEXT,
+                measurement_values TEXT,
+                version_number INTEGER DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """
+        )
 
     admin_username = "admin"
     admin_password = "REMOVED_SECRET"
     password_hash = generate_password_hash(admin_password)
 
-    cursor.execute(
-        "INSERT OR IGNORE INTO users (username, password_hash) VALUES (?, ?)",
-        (admin_username, password_hash),
-    )
+    if is_postgres():
+        cursor.execute(
+            "INSERT INTO users (username, password_hash) VALUES (%s,%s) ON CONFLICT (username) DO NOTHING",
+            (admin_username, password_hash),
+        )
+    else:
+        cursor.execute(
+            "INSERT OR IGNORE INTO users (username, password_hash) VALUES (?, ?)",
+            (admin_username, password_hash),
+        )
 
     templates = [
         # ================= MEN TOP WEAR =================
@@ -213,37 +346,16 @@ def init_db():
         ),
     ]
 
-    cursor.executemany(
-        "INSERT OR IGNORE INTO measurement_templates (garment_type, fields_json) VALUES (?, ?)",
-        templates,
-    )
-
-    # PAYEMENTS TABLE
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS payments (
-            payment_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            order_id INTEGER,
-            amount INTEGER,
-            payment_date TEXT,
-            payment_method TEXT
+    if is_postgres():
+        cursor.executemany(
+            "INSERT INTO measurement_templates (garment_type, fields_json) VALUES (%s,%s) ON CONFLICT (garment_type) DO NOTHING",
+            templates,
         )
-    """
-    )
-
-    # REMINDERS TABLE
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS reminders (
-            reminder_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            order_id INTEGER,
-            message TEXT,
-            reminder_date TEXT
+    else:
+        cursor.executemany(
+            "INSERT OR IGNORE INTO measurement_templates (garment_type, fields_json) VALUES (?, ?)",
+            templates,
         )
-    """
-    )
 
-
-    
     conn.commit()
     conn.close()
