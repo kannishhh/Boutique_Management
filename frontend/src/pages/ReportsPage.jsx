@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "../api/client";
 import Loader from "../components/Loader";
-import toast from "react-hot-toast";
+import {toast} from "sonner";
 
 export default function ReportsPage() {
   const [report, setReport] = useState(null);
@@ -12,8 +12,10 @@ export default function ReportsPage() {
       setLoading(true);
       const data = await apiFetch("/reports/earnings");
       setReport(data);
-    } catch {
-      toast.error("Failed to load report");
+    } catch (err) {
+      toast.error("Failed to load report", {
+        description: err.message,
+      });
     } finally {
       setLoading(false);
     }

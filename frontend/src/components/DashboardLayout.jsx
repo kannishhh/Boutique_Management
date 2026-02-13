@@ -6,6 +6,13 @@ export default function DashboardLayout({ children, onLogout, setPage }) {
 
         <nav className="space-y-3">
           <button
+            onClick={() => setPage("dashboard")}
+            className="block w-full text-left px-3 py-2 rounded-lg hover:bg-blue-50"
+          >
+            Dashboard
+          </button>
+          
+          <button
             onClick={() => setPage("customers")}
             className="block w-full text-left px-3 py-2 rounded-lg hover:bg-blue-50"
           >

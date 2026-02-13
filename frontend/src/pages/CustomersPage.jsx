@@ -1,7 +1,7 @@
 import { use, useEffect, useState } from "react";
 import { apiFetch } from "../api/client";
 import Loader from "../components/Loader";
-import toast from "react-hot-toast";
+import {toast} from "sonner";
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState([]);
@@ -18,8 +18,10 @@ export default function CustomersPage() {
       setLoading(true);
       const data = await apiFetch("/customers");
       setCustomers(data);
-    } catch {
-      toast.error("Failed to load customers");
+    } catch (err) {
+      toast.error("Failed to load customers", {
+        description: err.message,
+      });
     } finally {
       setLoading(false);
     }
@@ -62,7 +64,9 @@ export default function CustomersPage() {
       toast.success("Customer added successfully!");
       loadCustomers();
     } catch (err) {
-      toast.error(err.message);
+      toast.error("Failed to add customer", {
+        description: err.message,
+      });
     }
   }
 

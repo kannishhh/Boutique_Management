@@ -11,6 +11,13 @@ export async function apiFetch(endpoint, options = {}) {
     ...options,
   });
 
+  if (res.status === 401) {
+    localStorage.removeItem("token");
+    window.location.href = "/";
+
+    throw new Error("Session expired. Please login again.");
+  }
+
   const data = await res.json();
 
   if (!res.ok) {

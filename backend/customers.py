@@ -1,5 +1,11 @@
+import os
 import psycopg2
 from database import get_connection
+
+
+# detect database type
+def is_postgres():
+    return os.getenv("DATABASE_URL") is not None
 
 
 # ---------------------------
@@ -10,18 +16,32 @@ def create_customer_db(name, mobile, address, measurements):
         conn = get_connection()
         cursor = conn.cursor()
 
-        cursor.execute(
-            """
-            INSERT INTO customers (name, mobile, address, measurements)
-            VALUES (%s, %s, %s, %s)
-            """,
-            (
-                name.strip(),
-                mobile.strip(),
-                address.strip() if address else "",
-                measurements.strip() if measurements else "",
-            ),
-        )
+        if is_postgres():
+            cursor.execute(
+                """
+                INSERT INTO customers (name, mobile, address, measurements)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (
+                    name.strip(),
+                    mobile.strip(),
+                    address.strip() if address else "",
+                    measurements.strip() if measurements else "",
+                ),
+            )
+        else:
+            cursor.execute(
+                """
+                INSERT INTO customers (name, mobile, address, measurements)
+                VALUES (?, ?, ?, ?)
+                """,
+                (
+                    name.strip(),
+                    mobile.strip(),
+                    address.strip() if address else "",
+                    measurements.strip() if measurements else "",
+                ),
+            )
 
         conn.commit()
         conn.close()
@@ -46,6 +66,7 @@ def get_all_customers_db():
     cursor.execute(
         "SELECT customer_id, name, mobile, address, measurements FROM customers ORDER BY customer_id DESC"
     )
+
     rows = cursor.fetchall()
     conn.close()
 
@@ -59,7 +80,11 @@ def find_customer_by_mobile(mobile):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM customers WHERE mobile = %s", (mobile,))
+    if is_postgres():
+        cursor.execute("SELECT * FROM customers WHERE mobile = %s", (mobile,))
+    else:
+        cursor.execute("SELECT * FROM customers WHERE mobile = ?", (mobile,))
+
     row = cursor.fetchone()
     conn.close()
 

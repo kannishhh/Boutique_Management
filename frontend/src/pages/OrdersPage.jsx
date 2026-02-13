@@ -1,18 +1,9 @@
-import { use, useEffect, useState } from "react";
+import OrderForm from "../features/orders/OrderForm";
+import OrderTable from "../features/orders/OrderTable";
+import { useEffect, useState } from "react";
 import { apiFetch } from "../api/client";
-import Loader from "../components/Loader";
-import toast from "react-hot-toast";
-
-const SUIT_TYPES = [
-  "Kurta Pajama",
-  "Pant Shirt",
-  "3 Piece Suit",
-  "Blazer",
-  "Sherwani",
-  "Lehenga Blouse",
-  "Salwar Suit",
-  "Alteration",
-];
+import { toast } from "sonner";
+import { format } from "date-fns";
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
@@ -22,29 +13,43 @@ export default function OrdersPage() {
   const [suitType, setSuitType] = useState("");
   const [price, setPrice] = useState("");
   const [advance, setAdvance] = useState("");
-  const [deliveryDate, setDeliveryDate] = useState("");
+  const [deliveryDate, setDeliveryDate] = useState(null);
   const [clothProvided, setClothProvided] = useState(false);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+
+  const [dueStats, setDueStats] = useState({ overdue: [], due_soon: [] });
+
+  const [templates, setTemplates] = useState({});
+  const [measurements, setMeasurements] = useState({});
+  const [measurementHistory, setMeasurementHistory] = useState([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState(null);
+
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("CASH");
+  const [showPaymentHistory, setShowPaymentHistory] = useState(false);
+  const [paymentHistory, setPaymentHistory] = useState([]);
 
   async function loadData() {
     try {
       setLoading(true);
       const ordersData = await apiFetch("/orders");
       const customersData = await apiFetch("/customers");
+      const dueData = await apiFetch("/orders/due");
+
       setOrders(ordersData);
       setCustomers(customersData);
-    } catch {
-      toast.error("Failed to load orders or customers");
+      setDueStats(dueData);
+    } catch (err) {
+      toast.error("Failed to load orders or customers", {
+        description: err.message,
+      });
     } finally {
       setLoading(false);
     }
-  }
-
-  function formatDate(dateStr) {
-    const [year, month, day] = dateStr.split("-");
-    return `${day}-${month}-${year}`;
   }
 
   async function createOrder(e) {
@@ -52,6 +57,11 @@ export default function OrdersPage() {
 
     if (!mobile || !suitType || !price || !advance || !deliveryDate) {
       toast.error("Please fill all fields");
+      return;
+    }
+
+    if (Object.keys(measurements).length === 0) {
+      toast.error("Please enter measurements.");
       return;
     }
 
@@ -66,10 +76,11 @@ export default function OrdersPage() {
         body: JSON.stringify({
           mobile,
           suit_type: suitType,
+          measurement_values: measurements,
           cloth_provided: clothProvided,
           price: Number(price),
           advance_paid: Number(advance),
-          delivery_date: formatDate(deliveryDate),
+          delivery_date: format(deliveryDate, "dd-MM-yyyy"),
         }),
       });
 
@@ -77,29 +88,59 @@ export default function OrdersPage() {
       setSuitType("");
       setPrice("");
       setAdvance("");
-      setDeliveryDate("");
+      setDeliveryDate(null);
       setClothProvided(false);
+      setMeasurements({});
 
       toast.success("Order created successfully");
+      loadData();
+    } catch (err) {
+      toast.error("Failed to create order", {
+        description: err.message,
+      });
+    }
+  }
+
+  async function updateStatus(id, status) {
+    await apiFetch(`/orders/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    });
+    toast.success(`Order status changed to ${status}`);
+    loadData();
+  }
+
+  async function addPayment() {
+    try {
+      await apiFetch(`/orders/${selectedOrderId}/payments`, {
+        method: "POST",
+        body: JSON.stringify({
+          amount: Number(paymentAmount),
+          method: paymentMethod,
+        }),
+      });
+
+      toast.success("Payment added");
+      setShowPaymentModal(false);
+      setPaymentAmount("");
       loadData();
     } catch (err) {
       toast.error(err.message);
     }
   }
 
-  async function updateStatus(id, status) {
-    const ok = confirm("Mark this order as delivered?");
-    if (!ok) return;
-
-    await apiFetch(`/orders/${id}/status`, {
-      method: "PATCH",
-      body: JSON.stringify({ status }),
-    });
-    toast.success("Order delivered!");
-    loadData();
+  async function openPaymentHistory(orderId) {
+    const data = await apiFetch(`/orders/${orderId}/payments`);
+    setPaymentHistory(data);
+    setShowPaymentHistory(true);
   }
 
   useEffect(() => {
+    async function loadTemplates() {
+      const data = await apiFetch("/api/templates");
+      setTemplates(data);
+    }
+    loadTemplates();
     loadData();
   }, []);
 
@@ -113,159 +154,65 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-8">
-      <div className="bg-white p-6 rounded-xl shadow">
-        <h2 className="text-xl font-semibold mb-4">Create Order</h2>
-
-        <form onSubmit={createOrder} className="grid grid-cols-3 gap-4">
-          <select
-            className="border p-3 rounded-lg"
-            value={mobile}
-            onChange={(e) => setMobile(e.target.value)}
-          >
-            <option>Select Customer</option>
-            {customers.map((c) => (
-              <option key={c.customer_id} value={c.mobile}>
-                {c.name} ({c.mobile})
-              </option>
-            ))}
-          </select>
-
-          <select
-            className="border p-3 rounded-lg"
-            value={suitType}
-            onChange={(e) => setSuitType(e.target.value)}
-          >
-            <option value="">Select Suit Type</option>
-            {SUIT_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
-
-          <input
-            type="number"
-            min="0"
-            className="border p-3 rounded-lg"
-            placeholder="Price"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-          />
-
-          <input
-            type="number"
-            min="0"
-            max={price || 0}
-            className="border p-3 rounded-lg"
-            placeholder="Advance Paid"
-            value={advance}
-            onChange={(e) => setAdvance(e.target.value)}
-          />
-
-          <input
-            className="border p-3 rounded-lg"
-            type="date"
-            value={deliveryDate}
-            onChange={(e) => setDeliveryDate(e.target.value)}
-          />
-
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={clothProvided}
-              onChange={(e) => setClothProvided(e.target.checked)}
-            />
-            Customer provided cloth
-          </label>
-
-          <button className="col-span-3 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">
-            Create Order
-          </button>
-        </form>
-      </div>
-
-      <div className="bg-white p-6 rounded-xl shadow">
-        <h2 className="text-xl font-semibold mb-4">Orders</h2>
-
-        <div className="flex gap-4 mb-4">
-          <input
-            className="border p-3 rounded-lg w-72"
-            placeholder="Search by customer..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-
-          <select
-            className="border p-3 rounded-lg"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="ALL">All Orders</option>
-            <option value="PENDING">Pending</option>
-            <option value="DELIVERED">Delivered</option>
-          </select>
+      {(dueStats.overdue.length > 0 || dueStats.due_soon.length > 0) && (
+        <div className="p-4 rounded-xl shadow bg-yellow-50 border border-yellow-200">
+          {dueStats.overdue.length > 0 && (
+            <p className="text-red-600 font-semibold">
+              ⚠ {dueStats.overdue.length} order(s) overdue!
+            </p>
+          )}
+          {dueStats.due_soon.length > 0 && (
+            <p className="text-orange-600 font-semibold">
+              ⏰ {dueStats.due_soon.length} order(s) due soon!
+            </p>
+          )}
         </div>
-        {loading ? (
-          <Loader />
-        ) : filteredOrders.length === 0 ? (
-          <p className="text-gray-500 mb-4">No Matching orders found</p>
-        ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="py-3">Order ID</th>
-                <th>Customer</th>
-                <th>Mobile</th>
-                <th>Suit Type</th>
-                <th>Cloth Provided</th>
-                <th>Price</th>
-                <th>Advance</th>
-                <th>Balance</th>
-                <th>Delivery Date</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
+      )}
 
-            <tbody>
-              {filteredOrders.map((o) => (
-                <tr key={o.order_id} className="border-b hover:bg-gray-50">
-                  <td className="py-3">{o.order_id}</td>
-                  <td>{o.customer_name}</td>
-                  <td>{o.mobile}</td>
-                  <td>{o.suit_type}</td>
-                  <td>{o.cloth_provided ? "Customer Cloth" : "Shop Cloth"}</td>
-                  <td>₹{o.price}</td>
-                  <td>₹{o.advance_paid}</td>
-                  <td>₹{o.balance}</td>
-                  <td>{o.delivery_date}</td>
-                  <td>
-                    <span
-                      className={
-                        o.status === "DELIVERED"
-                          ? "text-green-600 font-semibold"
-                          : "text-orange-600 font-semibold"
-                      }
-                    >
-                      {o.status}
-                    </span>
-                  </td>
-                  <td>
-                    {o.status !== "DELIVERED" && (
-                      <button
-                        onClick={() => updateStatus(o.order_id, "DELIVERED")}
-                        className="text-green-600 font-semibold cursor-pointer hover:underline"
-                      >
-                        Mark Delivered
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <OrderForm
+        createOrder={createOrder}
+        customers={customers}
+        templates={templates}
+        mobile={mobile}
+        setMobile={setMobile}
+        suitType={suitType}
+        setSuitType={setSuitType}
+        measurements={measurements}
+        setMeasurements={setMeasurements}
+        measurementHistory={measurementHistory}
+        setMeasurementHistory={setMeasurementHistory}
+        setSelectedCustomerId={setSelectedCustomerId}
+        price={price}
+        setPrice={setPrice}
+        advance={advance}
+        setAdvance={setAdvance}
+        deliveryDate={deliveryDate}
+        setDeliveryDate={setDeliveryDate}
+        clothProvided={clothProvided}
+        setClothProvided={setClothProvided}
+      />
+
+      <OrderTable
+        loading={loading}
+        filteredOrders={filteredOrders}
+        search={search}
+        setSearch={setSearch}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        updateStatus={updateStatus}
+        setSelectedOrderId={setSelectedOrderId}
+        setShowPaymentModal={setShowPaymentModal}
+        openPaymentHistory={openPaymentHistory}
+        showPaymentModal={showPaymentModal}
+        paymentAmount={paymentAmount}
+        setPaymentAmount={setPaymentAmount}
+        paymentMethod={paymentMethod}
+        setPaymentMethod={setPaymentMethod}
+        addPayment={addPayment}
+        showPaymentHistory={showPaymentHistory}
+        setShowPaymentHistory={setShowPaymentHistory}
+        paymentHistory={paymentHistory}
+      />
     </div>
   );
 }

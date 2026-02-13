@@ -1,14 +1,20 @@
 from flask import Flask, request, jsonify
 from customers import find_customer_by_mobile, create_customer_db, get_all_customers_db
-from orders import (
+from services.orders_service import (
+    save_measurements,
     create_order_db,
     get_all_orders_db,
     update_order_status_db,
-    get_pending_orders_db,
     get_order_by_id_db,
+    search_orders_db,
+    get_measurement_history_db,
+)
+from services.payments_service import add_payment_db, get_payments_by_order_db
+from services.reminders_service import get_due_orders_db, generate_due_reminders_db
+from services.analytics_service import (
+    get_dashboard_stats_db,
     get_delivered_orders_db,
     get_earnings_report_db,
-    search_orders_db,
     export_orders_to_csv,
 )
 from utils import is_valid_date
@@ -16,11 +22,14 @@ from auth import login_user, token_required, logout_user
 from database import init_db
 from flask import send_file
 from flask_cors import CORS
+from routes.measurement_templates import templates_bp
 
 app = Flask(__name__)
 CORS(app)
 
 init_db()
+
+app.register_blueprint(templates_bp)
 
 
 @app.route("/", methods=["GET"])
@@ -114,6 +123,13 @@ def create_order_api():
     if not customer:
         return jsonify({"error": "Customer not found"}), 404
 
+    measurement_values = data.get("measurement_values", {})
+
+    if measurement_values:
+        save_measurements(
+            customer["customer_id"], data["suit_type"], measurement_values
+        )
+
     if data["advance_paid"] > data["price"]:
         return jsonify({"error": "Advance cannot exceed price"}), 400
 
@@ -147,7 +163,9 @@ def update_order_status_api(order_id):
 
     new_status = data.get("status")
 
-    if new_status not in ["PENDING", "IN PROGRESS", "DELIVERED"]:
+    VALID_STATUSES = ["PENDING", "CUTTING", "STITCHING", "TRIAL", "READY", "DELIVERED"]
+
+    if new_status not in VALID_STATUSES:
         return jsonify({"error": "Invalid status"}), 400
 
     update_order_status_db(order_id, new_status)
@@ -155,10 +173,10 @@ def update_order_status_api(order_id):
     return jsonify({"message": "Status updated successfully"})
 
 
-@app.route("/orders/pending", methods=["GET"])
+@app.route("/orders/due", methods=["GET"])
 @token_required
-def get_pending_orders():
-    return jsonify(get_pending_orders_db())
+def get_due_orders():
+    return jsonify(get_due_orders_db())
 
 
 @app.route("/bill/<int:order_id>", methods=["GET"])
@@ -168,6 +186,12 @@ def generate_bill_api(order_id):
     if not order:
         return jsonify({"error": "Order not found"}), 404
     return jsonify(order)
+
+
+@app.route("/dashboard/stats", methods=["GET"])
+@token_required
+def get_dashboard_stats():
+    return jsonify(get_dashboard_stats_db())
 
 
 @app.route("/reports/daily", methods=["GET"])
@@ -213,6 +237,42 @@ def export_orders():
 
     filename = export_orders_to_csv()
     return send_file(filename, as_attachment=True)
+
+
+@app.route("/customers/<int:customer_id>/measurements", methods=["GET"])
+@token_required
+def get_customer_measurements(customer_id):
+    return jsonify(get_measurement_history_db(customer_id))
+
+
+# ---------- PAYMENTS ----------
+@app.route("/orders/<int:order_id>/payments", methods=["POST"])
+@token_required
+def add_payment(order_id):
+    data = request.get_json()
+
+    amount = data.get("amount")
+    method = data.get("method")
+
+    if not amount or amount <= 0:
+        return jsonify({"error": "Invalid amount"}), 400
+
+    add_payment_db(order_id, amount, method)
+
+    return jsonify({"message": "Payment recorded successfully"})
+
+
+@app.route("/orders/<int:order_id>/payments", methods=["GET"])
+@token_required
+def get_payments(order_id):
+    return jsonify(get_payments_by_order_db(order_id))
+
+
+@app.route("/reminders/generate", methods=["POST"])
+@token_required
+def generate_reminders():
+    reminders = generate_due_reminders_db()
+    return jsonify(reminders)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { apiFetch } from "../api/client";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 export default function LoginPage({ onLogin }) {
   const [username, setUsername] = useState("");
@@ -15,10 +15,14 @@ export default function LoginPage({ onLogin }) {
       });
 
       localStorage.setItem("token", data.token);
-      toast.success("Welcome back!");
+      toast.success("Welcome back!", {
+        description: "Login successful",
+      });
       onLogin();
     } catch (err) {
-      toast.error("Invalid username or password");
+      toast.error("Login failed", {
+        description: "Invalid username or password",
+      });
     }
   }
 
