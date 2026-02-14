@@ -1,6 +1,6 @@
 import json
 from flask import Blueprint, jsonify
-from database import get_connection
+from database import get_connection, is_postgres
 
 templates_bp = Blueprint("templates_bp", __name__)
 
@@ -17,14 +17,18 @@ def get_templates():
     conn.close()
 
     templates = {}
+
     for row in rows:
-        garment = row[0]
-        fields = row[1]
+        if is_postgres():
+            garment = row["garment_type"]
+            fields = row["fields_json"]
+        else:
+            garment = row[0]
+            fields = row[1]
 
         if isinstance(fields, str):
             fields = json.loads(fields)
 
         templates[garment] = fields
 
-        
     return jsonify(templates)
