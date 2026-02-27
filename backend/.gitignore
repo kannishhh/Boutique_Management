@@ -3,3 +3,5 @@ __pycache__/
 boutique.db
 orders_report.csv
 .env
+
+/uploads
