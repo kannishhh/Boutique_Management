@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, g
-from auth import token_required
+from middleware.auth import token_required
 from database import get_connection, is_postgres
 
 notifications_bp = Blueprint("notifications", __name__, url_prefix="/notifications")

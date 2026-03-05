@@ -4,7 +4,7 @@ import uuid
 from flask import Blueprint, jsonify, request, g
 from werkzeug.utils import secure_filename
 
-from auth import token_required
+from middleware.auth import token_required
 from database import get_connection, is_postgres
 from services.settings_service import (
     get_settings_db,

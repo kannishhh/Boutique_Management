@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify
 from database import get_connection
-from auth import token_required
+from middleware.auth import token_required
 
 calendar_bp = Blueprint("calendar", __name__)
 

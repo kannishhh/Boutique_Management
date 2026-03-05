@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, g, request
-from auth import token_required
+from middleware.auth import token_required
 from services.notification_service import create_notification
 from services.orders_service import (
     create_order_db,
@@ -9,9 +9,9 @@ from services.orders_service import (
     search_orders_db,
     delete_order_db,
 )
-from customers import find_customer_by_mobile
+from services.customers_service import find_customer_by_mobile
 from services.measurements_service import create_measurement_db
-from utils import is_valid_date
+from validators.input_validators import is_valid_date
 from services.reminders_service import get_due_orders_db
 from database import get_connection, is_postgres
 

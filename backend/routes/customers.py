@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request, g
 
-from auth import token_required
-from customers import (
+from middleware.auth import token_required
+from services.customers_service import (
     delete_customer_db,
     create_customer_db,
     get_all_customers_db,

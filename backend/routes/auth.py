@@ -4,11 +4,10 @@ import secrets
 from flask import Blueprint, jsonify, request
 from werkzeug.security import generate_password_hash
 
-from auth import (
-    login_user,
+from middleware.auth import (
+    generate_token,
+    logout_token,
     token_required,
-    logout_user,
-    get_current_user as get_current_user_service,
 )
 from services.auth_service import (
     find_user_by_username,
@@ -16,6 +15,8 @@ from services.auth_service import (
     find_user_by_reset_token,
     update_user_password,
     clear_reset_token,
+    verify_credentials,
+    get_current_user,
 )
 
 
@@ -29,10 +30,12 @@ def login():
     if not data:
         return jsonify({"error": "Missing JSON"}), 400
 
-    token = login_user(data.get("username"), data.get("password"))
+    user = verify_credentials(data.get("username"), data.get("password"))
 
-    if not token:
+    if not user:
         return jsonify({"error": "Invalid credentials"}), 401
+
+    token = generate_token(user["id"])
 
     return jsonify({"message": "Login Successful", "token": token})
 
@@ -43,7 +46,7 @@ def logout():
     auth_header = request.headers.get("Authorization")
     token = auth_header.split(" ")[1]
 
-    logout_user(token)
+    logout_token(token)
 
     return jsonify({"message": "Logged out successfully"})
 
@@ -88,4 +91,4 @@ def reset_password():
 @auth_bp.route("/auth/me", methods=["GET"])
 @token_required
 def auth_me():
-    return get_current_user_service()
+    return get_current_user()

@@ -29,7 +29,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     apiFetch("/dashboard/stats").then((data) => {
-      console.log("Dashboard stats:", data);
       setData(data);
       setLoading(false);
     });

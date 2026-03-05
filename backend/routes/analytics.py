@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, send_file
 
-from auth import token_required, verify_token
+from middleware.auth import token_required, verify_token
 from services.analytics_service import (
     get_dashboard_data_db,
     get_delivered_orders_db,

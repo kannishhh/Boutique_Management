@@ -1,5 +1,7 @@
+from werkzeug.security import check_password_hash
 from database import get_connection, is_postgres
 from datetime import datetime
+from flask import jsonify, g
 
 
 def find_user_by_username(username):
@@ -57,7 +59,6 @@ def find_user_by_reset_token(token):
     if not expiry:
         return None
 
-    # Convert string to datetime if sqlite
     if isinstance(expiry, str):
         expiry = datetime.fromisoformat(expiry)
 
@@ -103,3 +104,57 @@ def clear_reset_token(user_id):
 
     conn.commit()
     conn.close()
+
+
+def verify_credentials(username, password):
+    user = find_user_by_username(username)
+
+    if not user:
+        return None
+
+    if not check_password_hash(user["password_hash"], password):
+        return None
+
+    return user
+
+
+def get_current_user():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if is_postgres():
+        cursor.execute(
+            """
+            SELECT 
+                u.id, 
+                u.username, 
+                u.profile_image,
+                s.profile_name 
+            FROM users u 
+            LEFT JOIN settings s ON s.id = 1 
+            WHERE u.id = %s
+            """,
+            (g.current_user["id"],),
+        )
+    else:
+        cursor.execute(
+            """
+            SELECT 
+                u.id, 
+                u.username, 
+                u.profile_image,
+                s.profile_name 
+            FROM users u 
+            LEFT JOIN settings s ON s.id = 1 
+            WHERE u.id = ?
+            """,
+            (g.current_user["id"],),
+        )
+
+    user = cursor.fetchone()
+    conn.close()
+
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    return jsonify(dict(user))

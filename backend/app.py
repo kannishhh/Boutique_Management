@@ -1,5 +1,7 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
+
+from config.settings import current_config as config
 from database import init_db
 from routes.analytics import analytics_bp
 from routes.auth import auth_bp
@@ -14,16 +16,22 @@ from routes.payments import payments_bp
 from routes.reminders import reminders_bp
 from routes.settings import settings_bp
 
+
 app = Flask(__name__)
 CORS(
     app,
-    resources={r"/*": {"origins": "*"}},
-    supports_credentials=True,
-    allow_headers=["Content-Type", "Authorization"],
-    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    resources={
+        r"/*": {
+            "origins": config.CORS_ORIGINS,
+            "supports_credentials": config.CORS_SUPPORTS_CREDENTIALS,
+            "allow_headers": config.CORS_ALLOW_HEADERS,
+            "methods": config.CORS_METHODS,
+        }
+    },
 )
 
 init_db()
+
 
 app.register_blueprint(templates_bp)
 app.register_blueprint(calendar_bp)

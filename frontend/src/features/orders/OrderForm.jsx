@@ -14,7 +14,7 @@ import { fetchCustomerMeasurements } from "../../api/customers.api";
 import { CalendarIcon, ChevronRight, ChevronLeft, Check } from "lucide-react";
 import { useState } from "react";
 import { LuxurySelect } from "../../components/LuxurySelect";
-import { getPlaceholder } from "@/utils/measurementsUtils";
+import { getPlaceholder } from "@/utils";
 
 export default function OrderForm({
   createOrder,

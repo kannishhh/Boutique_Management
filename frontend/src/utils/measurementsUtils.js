@@ -1,6 +1,3 @@
-// -------------------------------
-// Smart Placeholder Generator
-// -------------------------------
 export function getPlaceholder(field) {
   const placeholderMap = {
     // Upper Body Core

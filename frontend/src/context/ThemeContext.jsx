@@ -1,25 +1,22 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect } from "react";
+import { THEME } from "@/constants/app.constants";
+import { useLocalStorage } from "@/hooks";
 
 const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
-  const [appearance, setAppearance] = useState(() => {
-    const saved = localStorage.getItem("appearance");
-    return saved
-      ? JSON.parse(saved)
-      : {
-          theme: "light",
-          accent: "#C9A961",
-          compact: false,
-        };
+  const [appearance, setAppearance] = useLocalStorage("appearance", {
+    theme: THEME.LIGHT,
+    accent: THEME.ACCENT_COLOR,
+    compact: false,
   });
 
   useEffect(() => {
     const root = document.documentElement;
 
-    if (appearance.theme === "dark") {
+    if (appearance.theme === THEME.DARK) {
       root.classList.add("dark");
-    } else if (appearance.theme === "light") {
+    } else if (appearance.theme === THEME.LIGHT) {
       root.classList.remove("dark");
     } else {
       const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -43,10 +40,6 @@ export function ThemeProvider({ children }) {
     const root = document.documentElement;
     root.classList.toggle("compact", appearance.compact);
   }, [appearance.compact]);
-
-  useEffect(() => {
-    localStorage.setItem("appearance", JSON.stringify(appearance));
-  }, [appearance]);
 
   return (
     <ThemeContext.Provider value={{ appearance, setAppearance }}>

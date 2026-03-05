@@ -22,7 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
-import { getPlaceholder } from "@/utils/measurementsUtils";
+import { getPlaceholder } from "@/utils";
 import { LuxurySelect } from "@/components/LuxurySelect";
 import MeasurementsSkeleton from "@/components/skeletons/MeasurementSkeleton";
 

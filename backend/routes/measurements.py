@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, g
 
-from auth import token_required
+from middleware.auth import token_required
 from services.measurements_service import (
     create_measurement_db,
     get_all_measurements_db,

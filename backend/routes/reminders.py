@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify
 
-from auth import token_required
+from middleware.auth import token_required
 from services.reminders_service import generate_due_reminders_db
 
 

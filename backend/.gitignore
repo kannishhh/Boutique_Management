@@ -5,3 +5,5 @@ orders_report.csv
 .env
 
 /uploads
+
+.venv
