@@ -332,14 +332,18 @@ def _add_all_missing_columns(conn=None):
     ]
 
     for table, column, col_type in columns_to_add:
+        if is_postgres():
+            cursor.execute(
+                f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {column} {col_type}"
+            )
+            conn.commit()
+            continue
+
         try:
-            if is_postgres():
-                cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}")
-            else:
-                cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}")
+            cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}")
             conn.commit()
         except Exception:
-            pass
+            conn.rollback()
 
     if should_close:
         conn.close()

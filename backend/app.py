@@ -76,6 +76,12 @@ app.register_blueprint(reminders_bp)
 app.register_blueprint(media_bp)
 
 
+@app.errorhandler(Exception)
+def handle_unexpected_error(error):
+    app.logger.exception("Unhandled backend error", exc_info=error)
+    return jsonify({"error": "Internal server error"}), 500
+
+
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({"message": "Boutique Management App is running!"})
