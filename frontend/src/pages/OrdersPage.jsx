@@ -58,6 +58,7 @@ export default function OrdersPage() {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [paymentInputAmount, setPaymentInputAmount] = useState("");
   const [paymentErrors, setPaymentErrors] = useState({});
+  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
 
   const statusColors = {
     PENDING: "bg-orange-100 text-orange-700 border-orange-200",
@@ -95,9 +96,11 @@ export default function OrdersPage() {
   async function loadData() {
     try {
       setLoading(true);
-      const ordersData = await fetchOrders();
-      const customersData = await fetchCustomers();
-      const dueData = await fetchDueOrders();
+      const [ordersData, customersData, dueData] = await Promise.all([
+        fetchOrders(),
+        fetchCustomers(),
+        fetchDueOrders(),
+      ]);
 
       setOrders(ordersData);
       setCustomers(customersData);
@@ -114,7 +117,12 @@ export default function OrdersPage() {
   async function createOrder(e) {
     e.preventDefault();
 
+    if (isCreatingOrder) {
+      return;
+    }
+
     try {
+      setIsCreatingOrder(true);
       await createOrderApi({
         mobile,
         suit_type: suitType,
@@ -134,6 +142,8 @@ export default function OrdersPage() {
       toast.error("Failed to create order", {
         description: err.message,
       });
+    } finally {
+      setIsCreatingOrder(false);
     }
   }
 
@@ -342,6 +352,7 @@ export default function OrdersPage() {
             </div>
             <OrderForm
               createOrder={createOrder}
+              isSubmitting={isCreatingOrder}
               customers={customers}
               templates={templates}
               mobile={mobile}

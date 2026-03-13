@@ -263,13 +263,13 @@ def get_full_revenue_dashboard_db():
     )
     row = cursor.fetchone()
 
-    total_orders = row[0] or 0
-    total_price = row[1] or 0
-    total_advance = row[2] or 0
-    total_pending = row[3] or 0
+    total_orders = row["total_orders"] or 0
+    total_price = row["total_price"] or 0
+    total_advance = row["total_advance"] or 0
+    total_pending = row["total_pending"] or 0
 
     if is_postgres():
-        month_expr = "TO_CHAR(created_at, 'YYYY-MM)"
+        month_expr = "TO_CHAR(created_at, 'YYYY-MM')"
     else:
         month_expr = "strftime('%Y-%m', created_at)"
 
@@ -287,7 +287,7 @@ def get_full_revenue_dashboard_db():
     monthly_data = cursor.fetchall()
 
     monthlyRevenue = [
-        {"month": row[0], "revenue": row[1] or 0, "orders": row[2] or 0}
+        {"month": row["month"], "revenue": row["revenue"] or 0, "orders": row["orders"] or 0}
         for row in monthly_data
     ]
 
@@ -305,7 +305,7 @@ def get_full_revenue_dashboard_db():
     outfit_data = cursor.fetchall()
 
     outfitRevenue = [
-        {"outfit": row[0], "revenue": row[1] or 0, "count": row[2] or 0}
+        {"outfit": row["suit_type"], "revenue": row["revenue"] or 0, "count": row["count"] or 0}
         for row in outfit_data
     ]
 
@@ -324,7 +324,7 @@ def get_full_revenue_dashboard_db():
     customer_data = cursor.fetchall()
 
     topCustomers = [
-        {"name": row[0], "revenue": row[1] or 0, "orders": row[2] or 0}
+        {"name": row["customer_name"], "revenue": row["revenue"] or 0, "orders": row["count"] or 0}
         for row in customer_data
     ]
 
@@ -362,8 +362,8 @@ def get_full_revenue_dashboard_db():
 
     growth_row = cursor.fetchone()
 
-    this_month = growth_row[0] or 0
-    last_month = growth_row[1] or 0
+    this_month = growth_row["this_month"] or 0
+    last_month = growth_row["last_month"] or 0
 
     growth_percent = 0
     if last_month > 0:

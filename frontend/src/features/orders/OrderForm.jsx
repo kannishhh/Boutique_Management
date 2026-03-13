@@ -18,6 +18,7 @@ import { getPlaceholder } from "@/utils";
 
 export default function OrderForm({
   createOrder,
+  isSubmitting = false,
   customers,
   templates,
   mobile,
@@ -169,10 +170,16 @@ export default function OrderForm({
 
       <form
         onSubmit={(e) => {
-          if (!validateByStep(3)) {
+          if (currentStep !== totalSteps) {
             e.preventDefault();
             return;
           }
+
+          if (!validateByStep(3) || isSubmitting) {
+            e.preventDefault();
+            return;
+          }
+
           createOrder(e);
         }}
         className="space-y-6"
@@ -541,10 +548,11 @@ export default function OrderForm({
           ) : (
             <Button
               type="submit"
+              disabled={isSubmitting}
               className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl h-11 gap-2"
             >
               <Check className="w-4 h-4" />
-              Create Order
+              {isSubmitting ? "Creating..." : "Create Order"}
             </Button>
           )}
         </div>

@@ -38,6 +38,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { AvatarImage } from "@radix-ui/react-avatar";
 import { useUser } from "@/context/UserContext";
+import { TIMERS } from "@/constants/app.constants";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
@@ -66,9 +67,6 @@ export default function DashboardLayout({ onLogout }) {
   const { user } = useUser();
   const [notifications, setNotifications] = useState([]);
   const [displayedNotifications, setDisplayedNotifications] = useState([]);
-  const [previousNotificationIds, setPreviousNotificationIds] = useState(
-    new Set(),
-  );
 
   useEffect(() => {
     loadBoutiqueName();
@@ -115,10 +113,10 @@ export default function DashboardLayout({ onLogout }) {
 
     const interval = setInterval(() => {
       loadNotifications();
-    }, 120000);
+    }, TIMERS.NOTIFICATION_REFRESH_INTERVAL);
 
     const handleRefreshNotifications = () => {
-      loadNotificationsWithDelay();
+      loadNotifications();
     };
     window.addEventListener("refreshNotifications", handleRefreshNotifications);
 
@@ -155,32 +153,7 @@ export default function DashboardLayout({ onLogout }) {
   }
 
   async function loadNotificationsWithDelay() {
-    try {
-      const data = await fetchNotifications();
-
-      const currentIds = new Set(data.map((n) => n.id));
-      const newNotificationIds = Array.from(currentIds).filter(
-        (id) => !previousNotificationIds.has(id),
-      );
-
-      if (newNotificationIds.length > 0) {
-        const delayMs = 10000 + Math.random() * 5000;
-
-        setTimeout(() => {
-          setNotifications(data);
-          const recentNotifications = data.slice(0, 4);
-          setDisplayedNotifications(recentNotifications);
-        }, delayMs);
-      } else {
-        setNotifications(data);
-        const recentNotifications = data.slice(0, 4);
-        setDisplayedNotifications(recentNotifications);
-      }
-
-      setPreviousNotificationIds(currentIds);
-    } catch (error) {
-      console.error("Failed to load notifications:", error.message);
-    }
+    await loadNotifications();
   }
   const unreadCount = displayedNotifications.filter((n) => !n.is_read).length;
 
