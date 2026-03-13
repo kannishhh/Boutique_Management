@@ -1,4 +1,4 @@
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   createCustomer,
   deleteCustomer,
@@ -74,8 +74,19 @@ export default function CustomersPage() {
   }
 
   async function addCustomer(e) {
-    if (!name || !mobile) {
-      toast.error("Name and mobile required");
+    e.preventDefault();
+
+    const newErrors = {};
+    if (!name.trim()) {
+      newErrors.name = "Customer name is required";
+    }
+    if (!/^\d{10}$/.test(mobile)) {
+      newErrors.mobile = "Mobile number must be exactly 10 digits";
+    }
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
       return;
     }
 
@@ -111,8 +122,17 @@ export default function CustomersPage() {
   async function saveEditCustomer(e) {
     e.preventDefault();
 
-    if (!editName || !editMobile) {
-      toast.error("Name and mobile required");
+    const newErrors = {};
+    if (!editName.trim()) {
+      newErrors.editName = "Customer name is required";
+    }
+    if (!/^\d{10}$/.test(editMobile)) {
+      newErrors.editMobile = "Mobile number must be exactly 10 digits";
+    }
+
+    setEditErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
       return;
     }
     try {
@@ -218,11 +238,14 @@ export default function CustomersPage() {
                   id="name"
                   placeholder="Enter full name"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    setErrors((prev) => ({ ...prev, name: "" }));
+                  }}
                   className={`rounded-xl ${errors.name ? "border-red-500 focus:ring-red-500" : ""}`}
                 />
                 {errors.name && (
-                  <p className="text-xs text-red-500">{errors.name}</p>
+                  <p className="text-red-500 text-xs mt-1">{errors.name}</p>
                 )}
               </div>
 
@@ -230,13 +253,20 @@ export default function CustomersPage() {
                 <Label htmlFor="mobile">Mobile Number *</Label>
                 <Input
                   id="mobile"
-                  placeholder="+91 XXXXX XXXXX"
+                  type="tel"
+                  maxLength={10}
+                  pattern="[0-9]*"
+                  placeholder="10-digit mobile number"
                   value={mobile}
-                  onChange={(e) => setMobile(e.target.value)}
+                  onChange={(e) => {
+                    const nextMobile = e.target.value.replace(/\D/g, "").slice(0, 10);
+                    setMobile(nextMobile);
+                    setErrors((prev) => ({ ...prev, mobile: "" }));
+                  }}
                   className={`rounded-xl ${errors.mobile ? "border-red-500 focus:ring-red-500" : ""}`}
                 />
                 {errors.mobile && (
-                  <p className="text-xs text-red-500">{errors.mobile}</p>
+                  <p className="text-red-500 text-xs mt-1">{errors.mobile}</p>
                 )}
               </div>
               <div className="space-y-2">
@@ -263,9 +293,9 @@ export default function CustomersPage() {
 
               <div className="flex gap-3 pt-4">
                 <Button
+                  type="button"
                   onClick={addCustomer}
                   className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground "
-                  disabled={!name || !mobile}
                 >
                   Save Customer
                 </Button>
@@ -454,11 +484,14 @@ export default function CustomersPage() {
                 id="editName"
                 placeholder="Enter full name"
                 value={editName}
-                onChange={(e) => setEditName(e.target.value)}
+                onChange={(e) => {
+                  setEditName(e.target.value);
+                  setEditErrors((prev) => ({ ...prev, editName: "" }));
+                }}
                 className={`rounded-xl ${editErrors.editName ? "border-red-500 focus:ring-red-500" : ""}`}
               />
               {editErrors.editName && (
-                <p className="text-xs text-red-500">{editErrors.editName}</p>
+                <p className="text-red-500 text-xs mt-1">{editErrors.editName}</p>
               )}
             </div>
 
@@ -466,13 +499,20 @@ export default function CustomersPage() {
               <Label htmlFor="editMobile">Mobile Number *</Label>
               <Input
                 id="editMobile"
+                type="tel"
+                maxLength={10}
+                pattern="[0-9]*"
                 placeholder="10-digit mobile number"
                 value={editMobile}
-                onChange={(e) => setEditMobile(e.target.value)}
+                onChange={(e) => {
+                  const nextMobile = e.target.value.replace(/\D/g, "").slice(0, 10);
+                  setEditMobile(nextMobile);
+                  setEditErrors((prev) => ({ ...prev, editMobile: "" }));
+                }}
                 className={`rounded-xl ${editErrors.editMobile ? "border-red-500 focus:ring-red-500" : ""}`}
               />
               {editErrors.editMobile && (
-                <p className="text-xs text-red-500">{editErrors.editMobile}</p>
+                <p className="text-red-500 text-xs mt-1">{editErrors.editMobile}</p>
               )}
             </div>
 
@@ -502,7 +542,6 @@ export default function CustomersPage() {
               <Button
                 type="submit"
                 className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl"
-                disabled={!editName || !editMobile}
               >
                 Save Changes
               </Button>

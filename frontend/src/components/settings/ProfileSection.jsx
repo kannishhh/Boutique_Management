@@ -14,10 +14,10 @@ export default function ProfileSection({
   profilePhone,
   setProfilePhone,
   profilePhoto,
-  setProfilePhoto,
   fileInputRef,
   handlePhotoUpload,
   handleSaveProfile,
+  errors,
 }) {
   return (
     <Card className="p-6 rounded-2xl border-border/50 shadow-sm">
@@ -51,6 +51,9 @@ export default function ProfileSection({
             <p className="text-sm text-muted-foreground">
               JPS or PNG. Max size 2MB.
             </p>
+            {errors?.photo && (
+              <p className="text-red-500 text-xs mt-1">{errors.photo}</p>
+            )}
           </div>
         </div>
 
@@ -62,6 +65,9 @@ export default function ProfileSection({
               onChange={(e) => setProfileName(e.target.value)}
               className="rounded-xl"
             />
+            {errors?.profileName && (
+              <p className="text-red-500 text-xs mt-1">{errors.profileName}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label>Email Address</Label>
@@ -71,14 +77,25 @@ export default function ProfileSection({
               onChange={(e) => setProfileEmail(e.target.value)}
               className="rounded-xl"
             />
+            {errors?.profileEmail && (
+              <p className="text-red-500 text-xs mt-1">{errors.profileEmail}</p>
+            )}
           </div>
           <div className="space-y-2">
-            <Label>Phone Number</Label>
+            <Label htmlFor="profilePhone">Mobile Number</Label>
             <Input
+              id="profilePhone"
+              type="tel"
+              maxLength={10}
+              pattern="[0-9]*"
+              placeholder="10-digit mobile number"
               value={profilePhone}
               onChange={(e) => setProfilePhone(e.target.value)}
               className="rounded-xl"
             />
+            {errors?.profilePhone && (
+              <p className="text-red-500 text-xs mt-1">{errors.profilePhone}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label>User ID</Label>

@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, startOfToday } from "date-fns";
 import { Checkbox } from "../../components/ui/checkbox";
 import { Calendar } from "../../components/ui/calendar";
 import {
@@ -40,6 +40,7 @@ export default function OrderForm({
   setClothProvided,
 }) {
   const [currentStep, setCurrentStep] = useState(1);
+  const [errors, setErrors] = useState({});
   const totalSteps = 4;
 
   const steps = [
@@ -49,21 +50,55 @@ export default function OrderForm({
     { number: 4, title: "Review", subtitle: "Confirm Order" },
   ];
 
+  const hasValidMeasurements =
+    Object.keys(measurements).length > 0 &&
+    Object.values(measurements).every((value) => String(value).trim() !== "");
+
+  const validateByStep = (step) => {
+    const nextErrors = {};
+
+    if (step >= 1 && !mobile) {
+      nextErrors.mobile = "Customer is required";
+    }
+
+    if (step >= 2 && !hasValidMeasurements) {
+      nextErrors.measurements = "Measurements are required";
+    }
+
+    if (step >= 3) {
+      if (price === "" || price === null) {
+        nextErrors.price = "Price cannot be empty";
+      } else if (Number(price) < 0) {
+        nextErrors.price = "Price cannot be negative";
+      }
+
+      if (advance === "" || advance === null) {
+        nextErrors.advance = "Advance payment cannot be empty";
+      } else if (Number(advance) < 0) {
+        nextErrors.advance = "Advance payment cannot be negative";
+      }
+
+      if (
+        price !== "" &&
+        advance !== "" &&
+        !Number.isNaN(Number(price)) &&
+        !Number.isNaN(Number(advance)) &&
+        Number(advance) > Number(price)
+      ) {
+        nextErrors.advance = "Advance cannot exceed total price";
+      }
+
+      if (!deliveryDate) {
+        nextErrors.deliveryDate = "Delivery date is required";
+      }
+    }
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
   const handleNext = () => {
-    if (currentStep === 1 && !mobile) {
-      toast.error("Please select a customer");
-      return;
-    }
-    if (currentStep === 2 && !suitType) {
-      toast.error("Please select a suit type");
-      return;
-    }
-    if (currentStep === 2 && Object.keys(measurements).length === 0) {
-      toast.error("Please enter measurements");
-      return;
-    }
-    if (currentStep === 3 && (!price || !advance || !deliveryDate)) {
-      toast.error("Please fill all pricing and delivery details");
+    if (!validateByStep(currentStep)) {
       return;
     }
 
@@ -132,7 +167,16 @@ export default function OrderForm({
         </div>
       </div>
 
-      <form onSubmit={createOrder} className="space-y-6">
+      <form
+        onSubmit={(e) => {
+          if (!validateByStep(3)) {
+            e.preventDefault();
+            return;
+          }
+          createOrder(e);
+        }}
+        className="space-y-6"
+      >
         {/* STEP 1: Customer Selection */}
         {currentStep === 1 && (
           <div className="space-y-5 animate-in fade-in duration-500 min-h-75">
@@ -151,6 +195,7 @@ export default function OrderForm({
                 value={mobile}
                 onChange={async (selectedMobile) => {
                   setMobile(selectedMobile);
+                  setErrors((prev) => ({ ...prev, mobile: "" }));
 
                   const customer = customers.find(
                     (c) => c.mobile === selectedMobile,
@@ -180,6 +225,9 @@ export default function OrderForm({
                 ]}
                 placeholder="Select a customer..."
               />
+              {errors.mobile && (
+                <p className="text-red-500 text-xs mt-1">{errors.mobile}</p>
+              )}
             </div>
 
             {mobile && (
@@ -216,6 +264,7 @@ export default function OrderForm({
                 value={suitType}
                 onChange={(selectedSuitType) => {
                   setSuitType(selectedSuitType);
+                  setErrors((prev) => ({ ...prev, measurements: "" }));
 
                   const template = templates.find(
                     (t) => t.name === selectedSuitType,
@@ -274,17 +323,21 @@ export default function OrderForm({
                         placeholder={getPlaceholder(field)}
                         className="rounded-xl h-9 text-sm bg-background"
                         value={measurements[field] || ""}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          setErrors((prev) => ({ ...prev, measurements: "" }));
                           setMeasurements({
                             ...measurements,
                             [field]: e.target.value,
-                          })
-                        }
+                          });
+                        }}
                       />
                     </div>
                   ))}
                 </div>
               </div>
+            )}
+            {errors.measurements && (
+              <p className="text-red-500 text-xs mt-1">{errors.measurements}</p>
             )}
           </div>
         )}
@@ -312,9 +365,15 @@ export default function OrderForm({
                     className="rounded-xl pl-7 h-11 bg-background"
                     placeholder="5000"
                     value={price}
-                    onChange={(e) => setPrice(e.target.value)}
+                    onChange={(e) => {
+                      setPrice(e.target.value);
+                      setErrors((prev) => ({ ...prev, price: "", advance: "" }));
+                    }}
                   />
                 </div>
+                {errors.price && (
+                  <p className="text-red-500 text-xs mt-1">{errors.price}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -330,9 +389,15 @@ export default function OrderForm({
                     className="rounded-xl pl-7 h-11 bg-background"
                     placeholder="2000"
                     value={advance}
-                    onChange={(e) => setAdvance(e.target.value)}
+                    onChange={(e) => {
+                      setAdvance(e.target.value);
+                      setErrors((prev) => ({ ...prev, advance: "" }));
+                    }}
                   />
                 </div>
+                {errors.advance && (
+                  <p className="text-red-500 text-xs mt-1">{errors.advance}</p>
+                )}
               </div>
             </div>
 
@@ -364,12 +429,19 @@ export default function OrderForm({
                   <Calendar
                     mode="single"
                     selected={deliveryDate}
-                    onSelect={setDeliveryDate}
+                    onSelect={(date) => {
+                      setDeliveryDate(date);
+                      setErrors((prev) => ({ ...prev, deliveryDate: "" }));
+                    }}
+                    disabled={(date) => date < startOfToday()}
                     className="rounded-xl"
                     initialFocus
                   />
                 </PopoverContent>
               </Popover>
+              {errors.deliveryDate && (
+                <p className="text-red-500 text-xs mt-1">{errors.deliveryDate}</p>
+              )}
             </div>
 
             <div className="flex items-center space-x-3 p-4 bg-muted/30 rounded-xl border border-border/50">

@@ -1,9 +1,0 @@
-__pycache__/
-*.pyc
-boutique.db
-orders_report.csv
-.env
-
-/uploads
-
-.venv

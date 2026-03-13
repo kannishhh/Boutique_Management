@@ -1,5 +1,4 @@
-from flask import Flask, jsonify
-from flask_cors import CORS
+from flask import Flask, jsonify, request, make_response
 
 from config.settings import current_config as config
 from database import init_db
@@ -18,17 +17,47 @@ from routes.settings import settings_bp
 
 
 app = Flask(__name__)
-CORS(
-    app,
-    resources={
-        r"/*": {
-            "origins": config.CORS_ORIGINS,
-            "supports_credentials": config.CORS_SUPPORTS_CREDENTIALS,
-            "allow_headers": config.CORS_ALLOW_HEADERS,
-            "methods": config.CORS_METHODS,
-        }
-    },
-)
+
+
+def is_allowed_origin(origin):
+    if not origin:
+        return False
+
+    if origin in config.CORS_ORIGINS:
+        return True
+
+    localhost_prefixes = (
+        "http://localhost:",
+        "http://127.0.0.1:",
+        "https://localhost:",
+        "https://127.0.0.1:",
+    )
+    return origin.startswith(localhost_prefixes)
+
+
+@app.before_request
+def handle_options_preflight():
+    if request.method == "OPTIONS":
+        response = make_response("", 204)
+        return add_cors_headers(response)
+    return None
+
+
+@app.after_request
+def add_cors_headers(response):
+    origin = request.headers.get("Origin")
+    if is_allowed_origin(origin):
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Vary"] = "Origin"
+
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Allow-Headers"] = ", ".join(
+        config.CORS_ALLOW_HEADERS
+    )
+    response.headers["Access-Control-Allow-Methods"] = ", ".join(
+        config.CORS_METHODS
+    )
+    return response
 
 init_db()
 

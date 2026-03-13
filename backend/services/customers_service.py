@@ -21,7 +21,7 @@ def create_customer_db(name, mobile, address, notes):
                     notes.strip() if notes else "",
                 ),
             )
-            customer_id = cursor.fetchone()[0]
+            customer_id = cursor.fetchone()["customer_id"]
         else:
             cursor.execute(
                 """
@@ -93,8 +93,8 @@ def get_all_customers_db():
 
         customer["display_id"] = f"CUST-{int(customer['customer_id']):03}"
 
-        customer["totalOrders"] = customer["totalOrders"] or 0
-        customer["pendingOrders"] = customer["pendingOrders"] or 0
+        customer["totalOrders"] = int(customer["totalOrders"] or 0)
+        customer["pendingOrders"] = int(customer["pendingOrders"] or 0)
         customer["lastOrder"] = customer["lastOrder"] or "—"
 
         customers.append(customer)

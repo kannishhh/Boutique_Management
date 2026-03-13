@@ -1,3 +1,23 @@
-.vscode/*
+.vscode
+.venv
 
+
+# Backend
 __pycache__/
+*.pyc
+boutique.db
+orders_report.csv
+.env
+uploads/
+
+
+# Frontend
+.env.production
+.env.development
+
+node_modules
+dist
+dist-ssr
+*.local
+
+public/

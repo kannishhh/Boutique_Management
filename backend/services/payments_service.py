@@ -22,7 +22,6 @@ def add_payment_db(order_id, amount, method):
             (order_id, amount, today, method),
         )
 
-        # update order balance
         cursor.execute(
             "UPDATE orders SET balance = balance - %s WHERE order_id = %s",
             (amount, order_id),

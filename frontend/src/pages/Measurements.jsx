@@ -9,7 +9,6 @@ import {
 import { fetchCustomers } from "@/api/customers.api";
 import { toast } from "sonner";
 import ConfirmDialog from "@/components/confirmDialog";
-import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -37,6 +36,7 @@ export default function Measurements() {
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [selectedGender, setSelectedGender] = useState("Female");
   const [measurementValues, setMeasurementValues] = useState({});
+  const [errors, setErrors] = useState({});
 
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedMeasurement, setSelectedMeasurement] = useState(null);
@@ -75,16 +75,28 @@ export default function Measurements() {
   async function handleAddMeasurement(e) {
     e.preventDefault();
 
+    const newErrors = {};
+
     if (!selectedCustomer || !selectedTemplate) {
-      toast.error("Please select customer and template");
-      return;
+      if (!selectedCustomer) {
+        newErrors.selectedCustomer = "Please select a customer";
+      }
+      if (!selectedTemplate) {
+        newErrors.selectedTemplate = "Please select a measurement template";
+      }
     }
+
     const hasEmptyFields = Object.values(measurementValues).some(
       (value) => value.trim() === "",
     );
 
     if (hasEmptyFields) {
-      toast.error("Please fill all measurement fields");
+      newErrors.measurementValues = "Please fill all measurement fields";
+    }
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
       return;
     }
 
@@ -110,10 +122,12 @@ export default function Measurements() {
     setSelectedTemplate("");
     setSelectedGender("Female");
     setMeasurementValues({});
+    setErrors({});
   }
 
   function handleTemplateChange(templateId) {
     setSelectedTemplate(templateId);
+    setErrors((prev) => ({ ...prev, selectedTemplate: "", measurementValues: "" }));
     const template = templates.find((t) => t.id === templateId);
 
     if (template) {
@@ -332,7 +346,10 @@ export default function Measurements() {
                 <Label htmlFor="customer">Customer *</Label>
                 <LuxurySelect
                   value={selectedCustomer}
-                  onChange={setSelectedCustomer}
+                  onChange={(value) => {
+                    setSelectedCustomer(value);
+                    setErrors((prev) => ({ ...prev, selectedCustomer: "" }));
+                  }}
                   options={[
                     { value: "", label: "Select Customer" },
                     ...customers.map((customer) => ({
@@ -342,6 +359,9 @@ export default function Measurements() {
                   ]}
                   placeholder="Select Customer"
                 />
+                {errors.selectedCustomer && (
+                  <p className="text-red-500 text-xs mt-1">{errors.selectedCustomer}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -372,6 +392,9 @@ export default function Measurements() {
                 ]}
                 placeholder="Select Template"
               />
+              {errors.selectedTemplate && (
+                <p className="text-red-500 text-xs mt-1">{errors.selectedTemplate}</p>
+              )}
             </div>
 
             {selectedTemplate && (
@@ -388,17 +411,21 @@ export default function Measurements() {
                         type="text"
                         placeholder={getPlaceholder(field)}
                         value={measurementValues[field]}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          setErrors((prev) => ({ ...prev, measurementValues: "" }));
                           setMeasurementValues({
                             ...measurementValues,
                             [field]: e.target.value,
-                          })
-                        }
+                          });
+                        }}
                         className="rounded-xl"
                       />
                     </div>
                   ))}
                 </div>
+                {errors.measurementValues && (
+                  <p className="text-red-500 text-xs mt-1">{errors.measurementValues}</p>
+                )}
               </div>
             )}
 

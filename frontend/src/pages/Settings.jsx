@@ -33,6 +33,9 @@ import { useUser } from "@/context/UserContext";
 import SettingsSkeleton from "@/components/skeletons/SettingsSkeleton";
 
 export default function Settings() {
+  const emailRegex =
+    /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[A-Za-z]{2,}$/;
+
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState(null);
   const fileInputRef = useRef(null);
@@ -52,6 +55,9 @@ export default function Settings() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [securityErrors, setSecurityErrors] = useState({});
+  const [profileErrors, setProfileErrors] = useState({});
+  const [boutiqueErrors, setBoutiqueErrors] = useState({});
 
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
@@ -83,7 +89,7 @@ export default function Settings() {
       setBoutiqueEmail(data.boutique_email || "");
       setBoutiqueAddress(data.boutique_address || "");
       setGstNumber(data.gst_number || "");
-    } catch (err) {
+    } catch {
       toast.error("Failed to load settings");
     } finally {
       setLoading(false);
@@ -91,19 +97,58 @@ export default function Settings() {
   }
 
   async function handleSaveProfile() {
+    const newErrors = {};
+    if (!profileName.trim()) {
+      newErrors.profileName = "Full name is required";
+    }
+    if (!profileEmail.trim()) {
+      newErrors.profileEmail = "Email is required";
+    } else if (!emailRegex.test(profileEmail.trim())) {
+      newErrors.profileEmail = "Please enter a valid email address";
+    }
+    if (!/^\d{10}$/.test(profilePhone)) {
+      newErrors.profilePhone = "Contact number must be exactly 10 digits";
+    }
+
+    setProfileErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      return;
+    }
+
     try {
       await updateProfile({
         name: profileName,
         email: profileEmail,
         phone: profilePhone,
       });
+      window.dispatchEvent(new Event("refreshBoutiqueName"));
       toast.success("Profile updated successfully!");
-    } catch (error) {
+    } catch {
       toast.error("Failed to update profile");
     }
   }
 
   async function handleSaveBoutique() {
+    const newErrors = {};
+    if (!boutiqueName.trim()) {
+      newErrors.boutiqueName = "Boutique name is required";
+    }
+    if (!/^\d{10}$/.test(boutiqueContact)) {
+      newErrors.boutiqueContact = "Contact number must be exactly 10 digits";
+    }
+    if (!boutiqueEmail.trim()) {
+      newErrors.boutiqueEmail = "Email is required";
+    } else if (!emailRegex.test(boutiqueEmail.trim())) {
+      newErrors.boutiqueEmail = "Please enter a valid email address";
+    }
+
+    setBoutiqueErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      return;
+    }
+
     try {
       await updateBoutique({
         name: boutiqueName,
@@ -112,8 +157,9 @@ export default function Settings() {
         address: boutiqueAddress,
         gst: gstNumber,
       });
+      window.dispatchEvent(new Event("refreshBoutiqueName"));
       toast.success("Boutique updated successfully!");
-    } catch (error) {
+    } catch {
       toast.error("Failed to update boutique");
     }
   }
@@ -135,7 +181,7 @@ export default function Settings() {
         ...settings,
         notifications: updated,
       });
-    } catch (error) {
+    } catch {
       toast.error("Failed to update notification");
     }
   }
@@ -145,24 +191,37 @@ export default function Settings() {
       await updateAppearance(appearance);
 
       toast.success("Appearance saved!");
-    } catch (error) {
+    } catch {
       toast.error("Failed to update appearance");
     }
   }
 
   async function handleChangePassword() {
+    const newErrors = {};
+
     if (!currentPassword || !newPassword || !confirmPassword) {
-      toast.error("Please fill all password fields");
-      return;
+      if (!currentPassword) {
+        newErrors.currentPassword = "Current password is required";
+      }
+      if (!newPassword) {
+        newErrors.newPassword = "New password is required";
+      }
+      if (!confirmPassword) {
+        newErrors.confirmPassword = "Please confirm your new password";
+      }
     }
 
     if (newPassword !== confirmPassword) {
-      toast.error("New passwords do not match");
-      return;
+      newErrors.confirmPassword = "New passwords do not match";
     }
 
     if (newPassword.length < 6) {
-      toast.error("Password must be at least 6 characters");
+      newErrors.newPassword = "Password must be at least 6 characters";
+    }
+
+    setSecurityErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
       return;
     }
 
@@ -177,6 +236,7 @@ export default function Settings() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      setSecurityErrors({});
     } catch (error) {
       toast.error(error.message || "Failed to update password");
     }
@@ -186,12 +246,18 @@ export default function Settings() {
     const file = e.target.files[0];
     if (!file) return;
 
+    const newErrors = {};
+
     if (!file.type.startsWith("image/")) {
-      toast.error("Please upload a valid image file");
-      return;
+      newErrors.photo = "Please upload a valid image file";
     }
     if (file.size > 2 * 1024 * 1024) {
-      toast.error("File must be under 2MB");
+      newErrors.photo = "File must be under 2MB";
+    }
+
+    setProfileErrors((prev) => ({ ...prev, ...newErrors }));
+
+    if (Object.keys(newErrors).length > 0) {
       return;
     }
 
@@ -200,11 +266,13 @@ export default function Settings() {
 
     try {
       const res = await uploadProfilePhoto(formData);
+      void res;
 
       await loadUser();
+      setProfileErrors((prev) => ({ ...prev, photo: "" }));
 
       toast.success("Profile photo updated!");
-    } catch (error) {
+    } catch {
       toast.error("Failed to upload photo");
     }
   }
@@ -258,32 +326,54 @@ export default function Settings() {
         <TabsContent value="profile">
           <ProfileSection
             profileName={profileName}
-            setProfileName={setProfileName}
+            setProfileName={(value) => {
+              setProfileName(value);
+              setProfileErrors((prev) => ({ ...prev, profileName: "" }));
+            }}
             profileEmail={profileEmail}
-            setProfileEmail={setProfileEmail}
+            setProfileEmail={(value) => {
+              setProfileEmail(value);
+              setProfileErrors((prev) => ({ ...prev, profileEmail: "" }));
+            }}
             profilePhone={profilePhone}
-            setProfilePhone={setProfilePhone}
+            setProfilePhone={(value) => {
+              const sanitized = value.replace(/\D/g, "").slice(0, 10);
+              setProfilePhone(sanitized);
+              setProfileErrors((prev) => ({ ...prev, profilePhone: "" }));
+            }}
             profilePhoto={profilePhoto}
             setProfilePhoto={setProfilePhoto}
             fileInputRef={fileInputRef}
             handlePhotoUpload={handlePhotoUpload}
             handleSaveProfile={handleSaveProfile}
+            errors={profileErrors}
           />
         </TabsContent>
 
         <TabsContent value="boutique">
           <BoutiqueSection
             boutiqueName={boutiqueName}
-            setBoutiqueName={setBoutiqueName}
+            setBoutiqueName={(value) => {
+              setBoutiqueName(value);
+              setBoutiqueErrors((prev) => ({ ...prev, boutiqueName: "" }));
+            }}
             boutiqueContact={boutiqueContact}
-            setBoutiqueContact={setBoutiqueContact}
+            setBoutiqueContact={(value) => {
+              const sanitized = value.replace(/\D/g, "").slice(0, 10);
+              setBoutiqueContact(sanitized);
+              setBoutiqueErrors((prev) => ({ ...prev, boutiqueContact: "" }));
+            }}
             boutiqueEmail={boutiqueEmail}
-            setBoutiqueEmail={setBoutiqueEmail}
+            setBoutiqueEmail={(value) => {
+              setBoutiqueEmail(value);
+              setBoutiqueErrors((prev) => ({ ...prev, boutiqueEmail: "" }));
+            }}
             boutiqueAddress={boutiqueAddress}
             setBoutiqueAddress={setBoutiqueAddress}
             gstNumber={gstNumber}
             setGstNumber={setGstNumber}
             handleSaveBoutique={handleSaveBoutique}
+            errors={boutiqueErrors}
           />
         </TabsContent>
 
@@ -306,13 +396,23 @@ export default function Settings() {
         <TabsContent value="security">
           <SecuritySection
             currentPassword={currentPassword}
-            setCurrentPassword={setCurrentPassword}
+            setCurrentPassword={(value) => {
+              setCurrentPassword(value);
+              setSecurityErrors((prev) => ({ ...prev, currentPassword: "" }));
+            }}
             newPassword={newPassword}
-            setNewPassword={setNewPassword}
+            setNewPassword={(value) => {
+              setNewPassword(value);
+              setSecurityErrors((prev) => ({ ...prev, newPassword: "" }));
+            }}
             confirmPassword={confirmPassword}
-            setConfirmPassword={setConfirmPassword}
+            setConfirmPassword={(value) => {
+              setConfirmPassword(value);
+              setSecurityErrors((prev) => ({ ...prev, confirmPassword: "" }));
+            }}
             handleChangePassword={handleChangePassword}
             setShowLogoutDialog={setShowLogoutDialog}
+            errors={securityErrors}
           />
         </TabsContent>
       </Tabs>

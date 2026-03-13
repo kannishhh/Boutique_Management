@@ -23,7 +23,7 @@ def create_measurement_db(customer_id, garment_type, gender, measurements):
             """,
             (customer_id, garment_type, gender, json.dumps(measurements)),
         )
-        measurement_id = cursor.fetchone()[0]
+        measurement_id = cursor.fetchone()["id"]
     else:
         cursor.execute(
             """

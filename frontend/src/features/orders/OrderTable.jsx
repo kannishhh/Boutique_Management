@@ -4,7 +4,6 @@ import { Edit2, Eye, Search, Trash2, TriangleAlert } from "lucide-react";
 import { Badge } from "../../components/ui/badge";
 
 export default function OrderTable({
-  loading,
   filteredOrders,
   search,
   setSearch,
@@ -13,7 +12,7 @@ export default function OrderTable({
   onViewOrder,
   onEditOrder,
   onDeleteOrder,
-  setPaymentDialogOpen,
+  onPayOrder,
 }) {
   const statusColors = {
     PENDING: "bg-orange-100 text-orange-700 border-orange-200",
@@ -41,55 +40,50 @@ export default function OrderTable({
           <div className="flex items-center gap-1 text-sm">
             <button
               onClick={() => setStatusFilter("ALL")}
-              className={`px-4 py-2 rounded-lg transition-colors font-medium ${
-                statusFilter === "ALL"
+              className={`px-4 py-2 rounded-lg transition-colors font-medium ${statusFilter === "ALL"
                   ? "text-accent bg-accent-50 underline"
                   : "text-muted-foreground hover:text-foreground"
-              }`}
+                }`}
             >
               All Orders
             </button>
             <span className="text-muted-foreground">|</span>
             <button
               onClick={() => setStatusFilter("PENDING")}
-              className={`px-4 py-2 rounded-lg transition-colors font-medium ${
-                statusFilter === "PENDING"
+              className={`px-4 py-2 rounded-lg transition-colors font-medium ${statusFilter === "PENDING"
                   ? "text-orange-700 bg-orange-50 underline"
                   : "text-muted-foreground hover:text-orange-600"
-              }`}
+                }`}
             >
               Pending
             </button>
             <span className="text-muted-foreground">|</span>
             <button
               onClick={() => setStatusFilter("STITCHING")}
-              className={`px-4 py-2 rounded-lg transition-colors font-medium ${
-                statusFilter === "STITCHING"
+              className={`px-4 py-2 rounded-lg transition-colors font-medium ${statusFilter === "STITCHING"
                   ? "text-blue-700 bg-blue-50 underline"
                   : "text-muted-foreground hover:text-blue-600"
-              }`}
+                }`}
             >
               Stitching
             </button>
             <span className="text-muted-foreground">|</span>
             <button
               onClick={() => setStatusFilter("READY")}
-              className={`px-4 py-2 rounded-lg transition-colors font-medium ${
-                statusFilter === "READY"
+              className={`px-4 py-2 rounded-lg transition-colors font-medium ${statusFilter === "READY"
                   ? "text-violet-700 bg-violet-50 underline"
                   : "text-muted-foreground hover:text-violet-600"
-              }`}
+                }`}
             >
               Ready
             </button>
             <span className="text-muted-foreground">|</span>
             <button
               onClick={() => setStatusFilter("DELIVERED")}
-              className={`px-4 py-2 rounded-lg transition-colors font-medium ${
-                statusFilter === "DELIVERED"
+              className={`px-4 py-2 rounded-lg transition-colors font-medium ${statusFilter === "DELIVERED"
                   ? "text-green-700 bg-green-50 underline"
                   : "text-muted-foreground hover:text-green-600"
-              }`}
+                }`}
             >
               Delivered
             </button>
@@ -120,7 +114,6 @@ export default function OrderTable({
 
               <tbody>
                 {filteredOrders.map((o) => {
-                  const balance = o.price - o.advance_paid;
 
                   return (
                     <tr
@@ -153,15 +146,14 @@ export default function OrderTable({
                       <td>
                         <Badge
                           variant="outline"
-                          className={`rounded-xl px-3 py-1 text-xs font-medium flex items-center gap-1${
-                            o.payment_status === "PAID"
+                          className={`rounded-xl px-3 py-1 text-xs font-medium flex items-center gap-1${o.payment_status === "PAID"
                               ? "bg-green-100 text-green-700 border-green-200"
                               : o.payment_status === "PARTIAL"
                                 ? o.status === "DELIVERED"
                                   ? "border-destructive/50 bg-destructive/90 text-white"
                                   : "bg-yellow-100 text-yellow-700 border-yellow-200"
                                 : "bg-muted text-muted-foreground border-muted"
-                          } 
+                            } 
                             `}
                         >
                           {o.payment_status === "PARTIAL" &&
@@ -170,7 +162,7 @@ export default function OrderTable({
                             )}
 
                           {o.payment_status === "PARTIAL" &&
-                          o.status === "DELIVERED"
+                            o.status === "DELIVERED"
                             ? "DUE"
                             : o.payment_status}
                         </Badge>
@@ -197,10 +189,7 @@ export default function OrderTable({
                           </button>
 
                           <button
-                            onClick={() => {
-                              setPaymentDialogOpen(true);
-                              onEditOrder(o);
-                            }}
+                            onClick={() => onPayOrder(o)}
                             className="p-2 rounded-lg hover:bg-green-50 text-muted-foreground hover:text-green-600 transition-all"
                             title="Manage Payment"
                           >

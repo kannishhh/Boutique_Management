@@ -8,6 +8,7 @@ import {
 import { fetchOrders } from "../api/orders.api";
 import { fetchCustomers } from "../api/customers.api";
 import { fetchMeasurements } from "../api/measurements.api";
+import { fetchSettings } from "../api/settings.api";
 const BASE_URL = import.meta.env.VITE_API_URL;
 import {
   LayoutDashboard,
@@ -61,10 +62,30 @@ export default function DashboardLayout({ onLogout }) {
     measurements: [],
   });
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [boutiqueName, setBoutiqueName] = useState("Golden Needle");
   const { user } = useUser();
   const [notifications, setNotifications] = useState([]);
   const [displayedNotifications, setDisplayedNotifications] = useState([]);
-  const [previousNotificationIds, setPreviousNotificationIds] = useState(new Set());
+  const [previousNotificationIds, setPreviousNotificationIds] = useState(
+    new Set(),
+  );
+
+  useEffect(() => {
+    loadBoutiqueName();
+
+    const handleRefreshBoutiqueName = () => {
+      loadBoutiqueName();
+    };
+
+    window.addEventListener("refreshBoutiqueName", handleRefreshBoutiqueName);
+
+    return () => {
+      window.removeEventListener(
+        "refreshBoutiqueName",
+        handleRefreshBoutiqueName,
+      );
+    };
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -94,7 +115,7 @@ export default function DashboardLayout({ onLogout }) {
 
     const interval = setInterval(() => {
       loadNotifications();
-    }, 30000);
+    }, 120000);
 
     const handleRefreshNotifications = () => {
       loadNotificationsWithDelay();
@@ -114,7 +135,6 @@ export default function DashboardLayout({ onLogout }) {
     try {
       const data = await fetchNotifications();
       setNotifications(data);
-      
 
       const recentNotifications = data.slice(0, 4);
       setDisplayedNotifications(recentNotifications);
@@ -123,31 +143,40 @@ export default function DashboardLayout({ onLogout }) {
     }
   }
 
+  async function loadBoutiqueName() {
+    try {
+      const data = await fetchSettings();
+      if (data?.boutique_name) {
+        setBoutiqueName(data.boutique_name);
+      }
+    } catch {
+      // Keep fallback name if settings request fails.
+    }
+  }
+
   async function loadNotificationsWithDelay() {
     try {
       const data = await fetchNotifications();
-      
-      // Find new notifications
-      const currentIds = new Set(data.map(n => n.id));
-      const newNotificationIds = Array.from(currentIds).filter(id => !previousNotificationIds.has(id));
-      
+
+      const currentIds = new Set(data.map((n) => n.id));
+      const newNotificationIds = Array.from(currentIds).filter(
+        (id) => !previousNotificationIds.has(id),
+      );
+
       if (newNotificationIds.length > 0) {
-        // Add delay before showing new notifications
-        const delayMs = 10000 + Math.random() * 5000; // 10-15 seconds
-        
+        const delayMs = 10000 + Math.random() * 5000;
+
         setTimeout(() => {
           setNotifications(data);
           const recentNotifications = data.slice(0, 4);
           setDisplayedNotifications(recentNotifications);
         }, delayMs);
       } else {
-        // No new notifications, update normally
         setNotifications(data);
         const recentNotifications = data.slice(0, 4);
         setDisplayedNotifications(recentNotifications);
       }
-      
-      // Update previous notification IDs
+
       setPreviousNotificationIds(currentIds);
     } catch (error) {
       console.error("Failed to load notifications:", error.message);
@@ -277,8 +306,9 @@ export default function DashboardLayout({ onLogout }) {
                 strokeWidth={1.5}
               />
               <div>
-                <h1 className="text-xl font-serif">Golden</h1>
-                <p className="text-xs text-sidebar-foreground/70">Needle</p>
+                <h1 className="text-lg font-serif leading-tight">
+                  {boutiqueName}
+                </h1>
               </div>
             </div>
           </div>

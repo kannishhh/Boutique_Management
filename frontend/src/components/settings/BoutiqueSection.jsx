@@ -17,6 +17,7 @@ export default function BoutiqueSection({
   gstNumber,
   setGstNumber,
   handleSaveBoutique,
+  errors,
 }) {
   return (
     <Card className="p-6 rounded-2xl border-border/50 shadow-sm">
@@ -29,16 +30,26 @@ export default function BoutiqueSection({
             onChange={(e) => setBoutiqueName(e.target.value)}
             className="rounded-xl"
           />
+          {errors?.boutiqueName && (
+            <p className="text-red-500 text-xs mt-1">{errors.boutiqueName}</p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label>Contact Number</Label>
             <Input
+              type="tel"
+              maxLength={10}
+              pattern="[0-9]*"
+              placeholder="10-digit contact number"
               value={boutiqueContact}
               onChange={(e) => setBoutiqueContact(e.target.value)}
               className="rounded-xl"
             />
+            {errors?.boutiqueContact && (
+              <p className="text-red-500 text-xs mt-1">{errors.boutiqueContact}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label>Email</Label>
@@ -48,6 +59,9 @@ export default function BoutiqueSection({
               onChange={(e) => setBoutiqueEmail(e.target.value)}
               className="rounded-xl"
             />
+            {errors?.boutiqueEmail && (
+              <p className="text-red-500 text-xs mt-1">{errors.boutiqueEmail}</p>
+            )}
           </div>
         </div>
 

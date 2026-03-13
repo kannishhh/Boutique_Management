@@ -15,9 +15,25 @@ export default function LoginPage({ onLogin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [errors, setErrors] = useState({});
 
   async function handleLogin(e) {
     e.preventDefault();
+
+    const newErrors = {};
+    if (!username.trim()) {
+      newErrors.username = "Username is required";
+    }
+    if (!password.trim()) {
+      newErrors.password = "Password is required";
+    }
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      return;
+    }
+
     try {
       const data = await login({ username, password });
 
@@ -33,7 +49,7 @@ export default function LoginPage({ onLogin }) {
         description: "Login successful",
       });
       onLogin();
-    } catch (err) {
+    } catch {
       toast.error("Login failed", {
         description: "Invalid username or password",
       });
@@ -84,10 +100,15 @@ export default function LoginPage({ onLogin }) {
                   type="text"
                   placeholder="admin@botique.com"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    setErrors((prev) => ({ ...prev, username: "" }));
+                  }}
                   className="h-12 bg-white border-border rounded-xl"
-                  required
                 />
+                {errors.username && (
+                  <p className="text-red-500 text-xs mt-1">{errors.username}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -97,10 +118,15 @@ export default function LoginPage({ onLogin }) {
                   type="current-password"
                   placeholder="••••••••"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setErrors((prev) => ({ ...prev, password: "" }));
+                  }}
                   className="h-12 bg-white border-border rounded-xl"
-                  required
                 />
+                {errors.password && (
+                  <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+                )}
               </div>
             </div>
 

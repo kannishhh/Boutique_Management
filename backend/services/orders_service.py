@@ -38,7 +38,7 @@ def create_order_db(order):
                 order["status"],
             ),
         )
-        order_id = cursor.fetchone()[0]
+        order_id = cursor.fetchone()["order_id"]
     else:
         cursor.execute(
             """

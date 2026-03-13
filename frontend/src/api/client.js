@@ -1,4 +1,12 @@
-const BASE_URL = import.meta.env.VITE_API_URL;
+const BASE_URL = import.meta.env.DEV
+  ? "/api"
+  : import.meta.env.VITE_API_URL?.trim() || "http://127.0.0.1:5000";
+
+function buildApiUrl(endpoint) {
+  const base = BASE_URL.endsWith("/") ? BASE_URL.slice(0, -1) : BASE_URL;
+  const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  return `${base}${path}`;
+}
 
 export async function apiFetch(endpoint, options = {}) {
   const token =
@@ -13,7 +21,7 @@ export async function apiFetch(endpoint, options = {}) {
   }
 
   try {
-    const res = await fetch(`${BASE_URL}${endpoint}`, {
+    const res = await fetch(buildApiUrl(endpoint), {
       headers,
       ...options,
     });
@@ -37,9 +45,9 @@ export async function apiFetch(endpoint, options = {}) {
 
     return data;
   } catch (error) {
-    if (error instanceof TypeError && error.message.includes("fetch")) {
+    if (error instanceof TypeError) {
       throw new Error(
-        "Cannot connect to server. Please check if the backend is running.",
+        `Cannot connect to server (${BASE_URL}). Please check backend is running and CORS allows this origin.`,
       );
     }
     throw error;

@@ -9,7 +9,9 @@ class Config:
     DATABASE_URL = os.environ.get("DATABASE_URL")
     SQLITE_DB_PATH = os.environ.get("SQLITE_DB_PATH", "boutique.db")
 
-    CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "http://localhost:5173").split(",")
+    CORS_ORIGINS = os.environ.get(
+        "CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
+    ).split(",")
     CORS_SUPPORTS_CREDENTIALS = (
         os.environ.get("CORS_SUPPORTS_CREDENTIALS", "True") == "True"
     )

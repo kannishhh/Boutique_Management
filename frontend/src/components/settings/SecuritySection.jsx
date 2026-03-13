@@ -14,6 +14,7 @@ export default function SecuritySection({
   setConfirmPassword,
   handleChangePassword,
   setShowLogoutDialog,
+  errors,
 }) {
   return (
     <div className="space-y-6">
@@ -29,6 +30,9 @@ export default function SecuritySection({
               onChange={(e) => setCurrentPassword(e.target.value)}
               className="rounded-xl"
             />
+            {errors?.currentPassword && (
+              <p className="text-red-500 text-xs mt-1">{errors.currentPassword}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label>New Password</Label>
@@ -39,6 +43,9 @@ export default function SecuritySection({
               onChange={(e) => setNewPassword(e.target.value)}
               className="rounded-xl"
             />
+            {errors?.newPassword && (
+              <p className="text-red-500 text-xs mt-1">{errors.newPassword}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label>Confirm New Password</Label>
@@ -49,6 +56,9 @@ export default function SecuritySection({
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="rounded-xl"
             />
+            {errors?.confirmPassword && (
+              <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
+            )}
           </div>
           <div className="flex gap-3 pt-4">
             <Button

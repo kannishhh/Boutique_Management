@@ -13,12 +13,19 @@ export default function ForgotPasswordPage() {
   const [username, setUsername] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   async function handleSubmit(e) {
     e.preventDefault();
 
-    if (!username) {
-      toast.error("Please enter your username");
+    const newErrors = {};
+    if (!username.trim()) {
+      newErrors.username = "Username is required";
+    }
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
       return;
     }
 
@@ -95,11 +102,16 @@ export default function ForgotPasswordPage() {
                       type="text"
                       placeholder="admin@boutique.com"
                       value={username}
-                      onChange={(e) => setUsername(e.target.value)}
+                      onChange={(e) => {
+                        setUsername(e.target.value);
+                        setErrors((prev) => ({ ...prev, username: "" }));
+                      }}
                       className="h-12 pl-12 bg-white border-border rounded-xl"
-                      required
                     />
                   </div>
+                  {errors.username && (
+                    <p className="text-red-500 text-xs mt-1">{errors.username}</p>
+                  )}
                 </div>
 
                 <Button

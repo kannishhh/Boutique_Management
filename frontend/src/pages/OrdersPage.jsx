@@ -57,6 +57,7 @@ export default function OrdersPage() {
 
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [paymentInputAmount, setPaymentInputAmount] = useState("");
+  const [paymentErrors, setPaymentErrors] = useState({});
 
   const statusColors = {
     PENDING: "bg-orange-100 text-orange-700 border-orange-200",
@@ -113,21 +114,6 @@ export default function OrdersPage() {
   async function createOrder(e) {
     e.preventDefault();
 
-    if (!mobile || !suitType || !price || !advance || !deliveryDate) {
-      toast.error("Please fill all required fields");
-      return;
-    }
-
-    if (Object.keys(measurements).length === 0) {
-      toast.error("Please enter measurements.");
-      return;
-    }
-
-    if (Number(advance) > Number(price)) {
-      toast.error("Advance cannot exceed total price");
-      return;
-    }
-
     try {
       await createOrderApi({
         mobile,
@@ -162,13 +148,19 @@ export default function OrdersPage() {
   }
 
   async function handleAddPayment(orderId) {
+    const newErrors = {};
+
     if (!paymentInputAmount || Number(paymentInputAmount) <= 0) {
-      toast.error("Enter valid payment amount");
-      return;
+      newErrors.paymentInputAmount = "Enter a valid payment amount";
     }
 
     if (Number(paymentInputAmount) > selectedOrder.balance) {
-      toast.error("Amount exceeds remaining balance");
+      newErrors.paymentInputAmount = "Amount exceeds remaining balance";
+    }
+
+    setPaymentErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
       return;
     }
 
@@ -178,6 +170,7 @@ export default function OrdersPage() {
       toast.success("Payment added successfully");
       setPaymentDialogOpen(false);
       setPaymentInputAmount("");
+      setPaymentErrors({});
       loadData();
     } catch (error) {
       toast.error("Failed to add payment", {
@@ -191,6 +184,9 @@ export default function OrdersPage() {
       await clearOrderPayment(orderId);
 
       toast.success("Payment cleared successfully");
+      setPaymentDialogOpen(false);
+      setPaymentInputAmount("");
+      setPaymentErrors({});
       loadData();
     } catch (error) {
       toast.error("Failed to clear payment", {
@@ -279,6 +275,11 @@ export default function OrdersPage() {
   const handleDeleteOrder = (order) => {
     setSelectedOrder(order);
     setDeleteOrderDialog(true);
+  };
+
+  const handlePayOrder = (order) => {
+    setSelectedOrder(order);
+    setPaymentDialogOpen(true);
   };
 
   useEffect(() => {
@@ -378,6 +379,7 @@ export default function OrdersPage() {
         onViewOrder={handleViewOrder}
         onEditOrder={handleEditOrder}
         onDeleteOrder={handleDeleteOrder}
+        onPayOrder={handlePayOrder}
         paymentDialogOpen={paymentDialogOpen}
         setPaymentDialogOpen={setPaymentDialogOpen}
         paymentInputAmount={paymentInputAmount}
@@ -670,7 +672,11 @@ export default function OrdersPage() {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-serif">Add Payment</h2>
               <button
-                onClick={() => setPaymentDialogOpen(false)}
+                type="button"
+                onClick={() => {
+                  setPaymentDialogOpen(false);
+                  setPaymentErrors({});
+                }}
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 <XIcon className="w-5 h-5" />
@@ -712,15 +718,28 @@ export default function OrdersPage() {
                 <Label>Payment Amount (₹)</Label>
                 <Input
                   type="number"
+                  min="0"
                   placeholder="Enter amount"
                   value={paymentInputAmount}
-                  onChange={(e) => setPaymentInputAmount(e.target.value)}
+                  onChange={(e) => {
+                    setPaymentInputAmount(e.target.value);
+                    setPaymentErrors((prev) => ({
+                      ...prev,
+                      paymentInputAmount: "",
+                    }));
+                  }}
                   className="rounded-xl"
                 />
+                {paymentErrors.paymentInputAmount && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {paymentErrors.paymentInputAmount}
+                  </p>
+                )}
               </div>
 
               <div className="flex gap-3 pt-2">
                 <Button
+                  type="button"
                   variant="outline"
                   className="flex-1 rounded-xl"
                   onClick={() => handleAddPayment(selectedOrder.order_id)}
@@ -729,6 +748,7 @@ export default function OrdersPage() {
                 </Button>
 
                 <Button
+                  type="button"
                   className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-xl"
                   onClick={() => handleClearPayment(selectedOrder.order_id)}
                 >
