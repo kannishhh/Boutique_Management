@@ -1,4 +1,5 @@
 import psycopg2
+from datetime import date, datetime
 from database import get_connection, is_postgres
 
 
@@ -90,6 +91,10 @@ def get_all_customers_db():
     customers = []
     for row in rows:
         customer = dict(row)
+
+        for key, value in customer.items():
+            if isinstance(value, (date, datetime)):
+                customer[key] = value.isoformat()
 
         customer["display_id"] = f"CUST-{int(customer['customer_id']):03}"
 
