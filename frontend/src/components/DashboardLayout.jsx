@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { buildUploadUrl } from "@/api/baseUrl";
 import {
   fetchNotifications,
   markAllNotificationsRead,
@@ -9,7 +10,6 @@ import { fetchOrders } from "../api/orders.api";
 import { fetchCustomers } from "../api/customers.api";
 import { fetchMeasurements } from "../api/measurements.api";
 import { fetchSettings } from "../api/settings.api";
-const BASE_URL = import.meta.env.VITE_API_URL;
 import {
   LayoutDashboard,
   Users,
@@ -269,7 +269,7 @@ export default function DashboardLayout({ onLogout }) {
   };
 
   const userPhoto = user?.profile_image
-    ? `${import.meta.env.VITE_API_URL}/uploads/profile/${user.profile_image}`
+    ? buildUploadUrl(`/uploads/profile/${user.profile_image}`)
     : null;
 
   const userInitials = user?.username?.slice(0, 2).toUpperCase() || "AU";

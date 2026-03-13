@@ -5,7 +5,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 
 def is_postgres():
-    return os.getenv("DATABASE_URL") is not None
+    return bool(os.getenv("DATABASE_URL"))
 
 
 # ---------------------------------------------------

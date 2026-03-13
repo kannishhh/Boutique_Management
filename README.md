@@ -109,6 +109,23 @@ Deployment
 
 - Render (Backend + Frontend)
 
+## Render Configuration
+
+Frontend Render service
+
+- Set `VITE_API_URL=https://boutique-api-0sog.onrender.com`
+- Do not point `VITE_API_URL` to the frontend URL, or the app will receive the SPA HTML instead of API JSON.
+
+Backend Render service
+
+- Set `DATABASE_URL` to the Render PostgreSQL connection string.
+- Set `CORS_ORIGINS` to include the frontend URL, for example `https://boutique-frontend-u5zy.onrender.com`.
+
+Local development
+
+- Do not set `DATABASE_URL` locally unless you want to use Postgres.
+- Local development continues to use SQLite through `SQLITE_DB_PATH` with the default `boutique.db`.
+
 ---
 
 ## Architecture

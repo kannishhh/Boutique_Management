@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { buildUploadUrl } from "@/api/baseUrl";
 import {
   changePassword,
   fetchSettings,
@@ -8,7 +9,6 @@ import {
   updateProfile,
   uploadProfilePhoto,
 } from "@/api/settings.api";
-const BASE_URL = import.meta.env.VITE_API_URL;
 import ConfirmDialog from "@/components/confirmDialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -71,7 +71,7 @@ export default function Settings() {
 
   useEffect(() => {
     if (user?.profile_image) {
-      setProfilePhoto(`${BASE_URL}/uploads/profile/${user.profile_image}`);
+      setProfilePhoto(buildUploadUrl(`/uploads/profile/${user.profile_image}`));
     }
   }, [user]);
 

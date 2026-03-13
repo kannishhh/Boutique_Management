@@ -3,6 +3,7 @@ import {
   API_ENDPOINTS,
   HTTP_STATUS,
 } from "../constants/api.constants";
+import { buildApiUrl } from "../api/baseUrl";
 
 class APIClient {
   constructor() {
@@ -13,7 +14,11 @@ class APIClient {
   }
 
   getAuthToken() {
-    return localStorage.getItem("auth_token");
+    return (
+      localStorage.getItem("token") ||
+      sessionStorage.getItem("token") ||
+      localStorage.getItem("auth_token")
+    );
   }
 
   buildHeaders(customHeaders = {}) {
@@ -33,6 +38,8 @@ class APIClient {
       const errorMessage = data?.error || data?.message || "An error occurred";
 
       if (status === HTTP_STATUS.UNAUTHORIZED) {
+        localStorage.removeItem("token");
+        sessionStorage.removeItem("token");
         localStorage.removeItem("auth_token");
         window.location.href = "/login";
       }
@@ -47,7 +54,10 @@ class APIClient {
 
   async get(endpoint, params = {}) {
     try {
-      const url = new URL(`${this.baseURL}${endpoint}`);
+      const url = new URL(
+        buildApiUrl(endpoint),
+        typeof window !== "undefined" ? window.location.origin : "http://localhost",
+      );
       Object.keys(params).forEach((key) =>
         url.searchParams.append(key, params[key]),
       );
@@ -69,7 +79,7 @@ class APIClient {
 
   async post(endpoint, data = {}) {
     try {
-      const response = await fetch(`${this.baseURL}${endpoint}`, {
+      const response = await fetch(buildApiUrl(endpoint), {
         method: "POST",
         headers: this.buildHeaders(),
         body: JSON.stringify(data),
@@ -87,7 +97,7 @@ class APIClient {
 
   async put(endpoint, data = {}) {
     try {
-      const response = await fetch(`${this.baseURL}${endpoint}`, {
+      const response = await fetch(buildApiUrl(endpoint), {
         method: "PUT",
         headers: this.buildHeaders(),
         body: JSON.stringify(data),
@@ -105,7 +115,7 @@ class APIClient {
 
   async patch(endpoint, data = {}) {
     try {
-      const response = await fetch(`${this.baseURL}${endpoint}`, {
+      const response = await fetch(buildApiUrl(endpoint), {
         method: "PATCH",
         headers: this.buildHeaders(),
         body: JSON.stringify(data),
@@ -123,7 +133,7 @@ class APIClient {
 
   async delete(endpoint) {
     try {
-      const response = await fetch(`${this.baseURL}${endpoint}`, {
+      const response = await fetch(buildApiUrl(endpoint), {
         method: "DELETE",
         headers: this.buildHeaders(),
       });
@@ -143,7 +153,7 @@ class APIClient {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch(`${this.baseURL}${endpoint}`, {
+      const response = await fetch(buildApiUrl(endpoint), {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${this.getAuthToken()}`,

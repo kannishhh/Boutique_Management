@@ -43,7 +43,7 @@ export default function Revenue() {
       setLoading(true);
       const data = await fetchRevenueStats();
       setStats(data);
-    } catch (err) {
+    } catch {
       toast.error("Failed to load revenue data");
     } finally {
       setLoading(false);
@@ -54,7 +54,6 @@ export default function Revenue() {
     try {
       const doc = new jsPDF();
 
-    s
       doc.setFillColor(201, 169, 97);
       doc.rect(0, 0, 210, 40, "F");
 

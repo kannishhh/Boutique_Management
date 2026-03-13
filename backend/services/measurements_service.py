@@ -4,7 +4,7 @@ from database import get_connection
 
 
 def is_postgres():
-    return os.getenv("DATABASE_URL") is not None
+    return bool(os.getenv("DATABASE_URL"))
 
 
 # ---------------------------------------------------

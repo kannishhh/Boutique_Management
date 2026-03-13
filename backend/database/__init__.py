@@ -4,10 +4,11 @@ import sqlite3
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash
+from config.settings import current_config as config
 
 
 def is_postgres():
-    return os.getenv("DATABASE_URL") is not None
+    return bool(os.getenv("DATABASE_URL"))
 
 
 def get_connection():
@@ -16,7 +17,7 @@ def get_connection():
     if database_url:
         return psycopg2.connect(database_url, cursor_factory=RealDictCursor)
 
-    conn = sqlite3.connect("boutique.db")
+    conn = sqlite3.connect(config.SQLITE_DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -307,16 +308,17 @@ def init_db():
         """
         )
 
-    _add_all_missing_columns()
-    _populate_measurement_templates()
+    _add_all_missing_columns(conn)
+    _populate_measurement_templates(conn)
 
     conn.commit()
     conn.close()
 
 
-def _add_all_missing_columns():
+def _add_all_missing_columns(conn=None):
     """Add any missing columns to existing tables."""
-    conn = get_connection()
+    should_close = conn is None
+    conn = conn or get_connection()
     cursor = conn.cursor()
 
     columns_to_add = [
@@ -339,12 +341,13 @@ def _add_all_missing_columns():
         except Exception:
             pass
 
-    conn.close()
+    if should_close:
+        conn.close()
 
 
-def _populate_measurement_templates():
-
-    conn = get_connection()
+def _populate_measurement_templates(conn=None):
+    should_close = conn is None
+    conn = conn or get_connection()
     cursor = conn.cursor()
 
     templates = [
@@ -453,4 +456,5 @@ def _populate_measurement_templates():
     except Exception as e:
         print(f"Template population skipped: {e}")
 
-    conn.close()
+    if should_close:
+        conn.close()

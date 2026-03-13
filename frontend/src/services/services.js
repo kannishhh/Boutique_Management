@@ -1,4 +1,5 @@
 import { apiClient } from './api.service';
+import { buildApiUrl } from '../api/baseUrl';
 import { API_ENDPOINTS } from '../constants/api.constants';
 
 export const authService = {
@@ -134,8 +135,13 @@ export const dashboardService = {
   },
 
   exportOrders: async () => {
-    const token = localStorage.getItem('auth_token');
-    window.location.href = `${API_ENDPOINTS.EXPORT_ORDERS}?token=${token}`;
+    const token =
+      localStorage.getItem('token') ||
+      sessionStorage.getItem('token') ||
+      localStorage.getItem('auth_token');
+    window.location.href = buildApiUrl(
+      `${API_ENDPOINTS.EXPORT_ORDERS}?token=${token}`,
+    );
   },
 };
 
