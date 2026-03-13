@@ -92,15 +92,24 @@ def get_all_customers_db():
     for row in rows:
         customer = dict(row)
 
-        for key, value in customer.items():
+        # Postgres lowercases unquoted aliases; normalise back to camelCase
+        for pg_key, camel_key in [
+            ("totalorders", "totalOrders"),
+            ("pendingorders", "pendingOrders"),
+            ("lastorder", "lastOrder"),
+        ]:
+            if pg_key in customer:
+                customer[camel_key] = customer.pop(pg_key)
+
+        for key, value in list(customer.items()):
             if isinstance(value, (date, datetime)):
                 customer[key] = value.isoformat()
 
         customer["display_id"] = f"CUST-{int(customer['customer_id']):03}"
 
-        customer["totalOrders"] = int(customer["totalOrders"] or 0)
-        customer["pendingOrders"] = int(customer["pendingOrders"] or 0)
-        customer["lastOrder"] = customer["lastOrder"] or "—"
+        customer["totalOrders"] = int(customer.get("totalOrders") or 0)
+        customer["pendingOrders"] = int(customer.get("pendingOrders") or 0)
+        customer["lastOrder"] = customer.get("lastOrder") or "—"
 
         customers.append(customer)
 
