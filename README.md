@@ -1,149 +1,236 @@
-# Boutique Management System (Full Stack SaaS)
+# 🧵 Boutique Management System (Full Stack SaaS)
 
-A full-stack web application built to digitize a real boutique business workflow.
-
-This app replaces the traditional notebook system used by tailoring shops to manage customers, orders, delivery dates and payments.
-
-LIVE DEMO  
-Frontend: https://boutique-frontend-u5zy.onrender.com  
-Backend API: https://boutique-api-0sog.onrender.com
+![React](https://img.shields.io/badge/Frontend-React-blue)
+![Flask](https://img.shields.io/badge/Backend-Flask-black)
+![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-blue)
+![Status](https://img.shields.io/badge/Status-Live-success)
+![Deployment](https://img.shields.io/badge/Deployed-Render-success)
 
 ---
 
-## Screenshots
+## 📌 Overview
 
-### Login Page
+The **Boutique Management System ** is a full-stack SaaS dashboard built to digitize and optimize boutique operations.
+
+It transforms traditional manual workflows into a **modern, scalable, and data-driven system** with multiple dedicated modules.
+
+---
+
+## 🌐 LIVE DEMO
+
+- 🔗 **Frontend:**
+  https://boutique-frontend-u5zy.onrender.com
+- 🔗 **Backend API:**
+  https://boutique-api-0sog.onrender.com
+
+---
+
+## 🔐 Demo Login (Admin Access)
+
+Use the credentials to explore the dashboard:
+
+- **Username:** `admin`
+- **Password:** `admin123`
+
+  > ⚠️ Note: Signup functionality is not available. This is a demo admin account.
+
+---
+
+## 📸 Screenshots
 
 ![Login](screenshots/login.png)
 
-### Customers Management
+![Dashboard](./screenshots/dashboard.png)
 
 ![Customers](screenshots/customers.png)
 
-### Orders Workflow
-
 ![Orders](screenshots/orders.png)
 
-### Reports & Analytics
-
-![Reports](screenshots/reports.png)
+![Revenue](screenshots/revenue.png)
 
 ---
 
-## Problem
+## 🎯 Problem Statement
 
-Small tailoring shops still manage orders using notebooks and memory.
-This causes:
+Small tailoring shops still rely on notebooks and tracking.
 
-- Lost measurements
-- Forgotten delivery dates
-- No business insights
-- Manual tracking of payments
+This leads to:
 
-This project solves that by providing a cloud-based admin dashboard.
+- ❌ Lost measurements
+- ❌ Missed delivery dates
+- ❌ No business insights
+- ❌ Manual tracking of payments
 
 ---
 
-## Features
+## ✅ Solution
 
-Authentication
+This project provides a **cloud-based admin dashboard** to manage all boutique operations efficiently.
 
-- Secure login/logout
-- Token based session management
+---
 
-Customer Management
+## 🧩 Core Modules
 
-- Add & search customers
-- Store contact details & measurements
+### 📊 Dashboard
 
-Order Management
+- Overview of total orders, revenue, and pending work
+- Quick insights & stats
+
+### 📦 Orders
 
 - Create stitching orders
-- Track delivery status
-- Payment tracking (advance + balance)
-- Mark orders delivered
+- Track status (pending / completed)
+- Assign delivery dates
 
-Reports Dashboard
+### 👥 Customers
 
-- Revenue analytics
-- Pending balance tracking
-- CSV export for accounting
+- Add, edit, search customers
+- Store contact details
 
-User Experience
+### 📏 Measurements
 
-- Toast notifications
-- Form validation
-- Search & filtering
-- Loading states
+- Save detailed body measurements
+- Link measurements to customers
+
+### 💰 Revenue
+
+- Track income & pending payments
+- Financial insights dashboard
+
+### 📅 Calendar
+
+- Visual tracking of delivery schedules
+- Avoid missed deadlines
+
+### ⚙️ Settings
+
+- Manage system configurations
+- Future scope for user roles
 
 ---
 
-## Project Highlights
+## ✨ Features
 
-- Built for a real boutique business workflow
-- Full CRUD + authentication + reports
-- Migrated from SQLite → PostgreSQL (cloud)
-- Deployed full stack on Render
-- Production-ready environment configuration
+### 🔐 Authentication
+
+- 🔐 Secure authentication system
+- 📊 Real-time analytics dashboard
+- 🔍 Advanced search & filtering
+- ⚡ Fast and responsive UI
+- 🧾 Order + payment tracking
+- 📅 Delivery scheduling system
+- 📈 Revenue insights
 
 ---
 
-## Tech Stack
+## 🚀 Project Highlights
 
-Frontend
+- 🧵 Built for a real boutique workflow
+- 📦 Modular dashboard architecture
+- 🔐 Full CRUD + authentication + reports
+- 🗄 Migrated SQLite → PostgreSQL (cloud)
+- 🌐 Fully Deployed (Frontend + Backend)
+
+---
+
+## 🛠 Tech Stack
+
+### 🎨 Frontend
 
 - React (Vite)
 - Tailwind CSS
 - React Hot Toast
 
-Backend
+### ⚙️ Backend
 
 - Python Flask REST API
-- JWT-like token auth
+- Token-based Authentication
 
-Database
+### 🗄 Database
 
-- PostgreSQL (Render Cloud)
+- PostgreSQL
 
-Deployment
+### 🚀 Deployment
 
-- Render (Backend + Frontend)
-
-## Render Configuration
-
-Frontend Render service
-
-- Set `VITE_API_URL=https://boutique-api-0sog.onrender.com`
-- Do not point `VITE_API_URL` to the frontend URL, or the app will receive the SPA HTML instead of API JSON.
-
-Backend Render service
-
-- Set `DATABASE_URL` to the Render PostgreSQL connection string.
-- Set `CORS_ORIGINS` to include the frontend URL, for example `https://boutique-frontend-u5zy.onrender.com`.
-
-Local development
-
-- Do not set `DATABASE_URL` locally unless you want to use Postgres.
-- Local development continues to use SQLite through `SQLITE_DB_PATH` with the default `boutique.db`.
+- Render
 
 ---
 
-## Architecture
+## ⚙️ Installation
+
+### 1️⃣ Clone Repository
+
+```bash
+git clone https://github.com/kannishhh/boutique-management.git
+cd boutique-management
+```
+
+### 2️⃣ Frontend Setup
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+### 3️⃣ Backend Setup
+
+```bash
+cd backend
+pip install -r requirements.txt
+python app.py
+```
+
+---
+
+## 🔐 Environment Variables
+
+### ⚙️ Backend `.env` file:
+
+```
+DATABASE_URL=your_postgresql_url
+SECRET_KEY=your_secret_key
+```
+
+### 🎨 Frontend `.env` file:
+
+```
+VITE_API_URL=https://boutique-api-0sog.onrender.com
+```
+
+---
+
+## 🏗 Architecture
 
 React Frontend → Flask API → PostgreSQL Database
 
 ---
 
-## Future Roadmap
+## 🚀 Future Roadmap
 
-- Customer mobile app
-- WhatsApp delivery reminders
-- AI-based pricing suggestions
-- Multi-boutique SaaS version
+- 📱 Mobile app for customers
+- 📲 WhatsApp delivery reminders
+- 🤖 AI-based pricing suggestions
+- 🏢 Multi-user roles (Admin/Staff)
+- 📊 Advanced analytics & reports
 
 ---
 
-## Why this project matters
+## 💡 Why this project matters
 
-This app was built for a real family boutique business.
-It demonstrates full-stack development, deployment, database migration and real-world problem solving.
+This project was built for a real family boutique business.
+
+It demonstrates:
+
+- Full-stack development
+- SaaS dashboard design
+- Real-world problem solving
+- Production deployment`
+- Scalable architecture
+
+---
+
+## 👨‍💻 Author
+
+**Kanish Kainth**
+🔗 https://github.com/kannishhh
