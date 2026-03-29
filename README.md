@@ -10,7 +10,7 @@
 
 ## 📌 Overview
 
-The **Boutique Management System ** is a full-stack SaaS dashboard built to digitize and optimize boutique operations.
+The **Boutique Management System** is a full-stack SaaS dashboard built to digitize and optimize boutique operations.
 
 It transforms traditional manual workflows into a **modern, scalable, and data-driven system** with multiple dedicated modules.
 
