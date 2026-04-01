@@ -130,7 +130,8 @@ def init_db():
                 order_id INTEGER,
                 amount INTEGER,
                 payment_date TEXT,
-                payment_method TEXT
+                payment_method TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """
         )
@@ -142,7 +143,8 @@ def init_db():
                 order_id INTEGER,
                 amount INTEGER,
                 payment_date TEXT,
-                payment_method TEXT
+                payment_method TEXT,
+                created_at TEXT
             )
         """
         )
@@ -341,6 +343,16 @@ def _add_all_missing_columns(conn=None):
 
         try:
             cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}")
+            conn.commit()
+        except Exception:
+            conn.rollback()
+
+    if is_postgres():
+        cursor.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+        conn.commit()
+    else:
+        try:
+            cursor.execute("ALTER TABLE payments ADD COLUMN created_at TEXT")
             conn.commit()
         except Exception:
             conn.rollback()

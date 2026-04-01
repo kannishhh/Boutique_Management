@@ -41,8 +41,8 @@ export default function OrderTable({
             <button
               onClick={() => setStatusFilter("ALL")}
               className={`px-4 py-2 rounded-lg transition-colors font-medium ${statusFilter === "ALL"
-                  ? "text-accent bg-accent-50 underline"
-                  : "text-muted-foreground hover:text-foreground"
+                ? "text-accent bg-accent-50 underline"
+                : "text-muted-foreground hover:text-foreground"
                 }`}
             >
               All Orders
@@ -51,8 +51,8 @@ export default function OrderTable({
             <button
               onClick={() => setStatusFilter("PENDING")}
               className={`px-4 py-2 rounded-lg transition-colors font-medium ${statusFilter === "PENDING"
-                  ? "text-orange-700 bg-orange-50 underline"
-                  : "text-muted-foreground hover:text-orange-600"
+                ? "text-orange-700 bg-orange-50 underline"
+                : "text-muted-foreground hover:text-orange-600"
                 }`}
             >
               Pending
@@ -61,8 +61,8 @@ export default function OrderTable({
             <button
               onClick={() => setStatusFilter("STITCHING")}
               className={`px-4 py-2 rounded-lg transition-colors font-medium ${statusFilter === "STITCHING"
-                  ? "text-blue-700 bg-blue-50 underline"
-                  : "text-muted-foreground hover:text-blue-600"
+                ? "text-blue-700 bg-blue-50 underline"
+                : "text-muted-foreground hover:text-blue-600"
                 }`}
             >
               Stitching
@@ -71,8 +71,8 @@ export default function OrderTable({
             <button
               onClick={() => setStatusFilter("READY")}
               className={`px-4 py-2 rounded-lg transition-colors font-medium ${statusFilter === "READY"
-                  ? "text-violet-700 bg-violet-50 underline"
-                  : "text-muted-foreground hover:text-violet-600"
+                ? "text-violet-700 bg-violet-50 underline"
+                : "text-muted-foreground hover:text-violet-600"
                 }`}
             >
               Ready
@@ -81,8 +81,8 @@ export default function OrderTable({
             <button
               onClick={() => setStatusFilter("DELIVERED")}
               className={`px-4 py-2 rounded-lg transition-colors font-medium ${statusFilter === "DELIVERED"
-                  ? "text-green-700 bg-green-50 underline"
-                  : "text-muted-foreground hover:text-green-600"
+                ? "text-green-700 bg-green-50 underline"
+                : "text-muted-foreground hover:text-green-600"
                 }`}
             >
               Delivered
@@ -146,13 +146,13 @@ export default function OrderTable({
                       <td>
                         <Badge
                           variant="outline"
-                          className={`rounded-xl px-3 py-1 text-xs font-medium flex items-center gap-1${o.payment_status === "PAID"
-                              ? "bg-green-100 text-green-700 border-green-200"
-                              : o.payment_status === "PARTIAL"
-                                ? o.status === "DELIVERED"
-                                  ? "border-destructive/50 bg-destructive/90 text-white"
-                                  : "bg-yellow-100 text-yellow-700 border-yellow-200"
-                                : "bg-muted text-muted-foreground border-muted"
+                          className={`rounded-xl px-3 py-1 text-xs font-medium flex items-center gap-1 ${o.payment_status === "PAID"
+                            ? "bg-green-100 text-green-700 border-green-200"
+                            : o.payment_status === "PARTIAL"
+                              ? o.status === "DELIVERED"
+                                ? "border-destructive/50 bg-destructive/90 text-white"
+                                : "bg-yellow-100 text-yellow-700 border-yellow-200"
+                              : "bg-muted text-muted-foreground border-muted"
                             } 
                             `}
                         >

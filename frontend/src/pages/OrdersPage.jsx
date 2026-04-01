@@ -2,8 +2,6 @@ import OrderForm from "../features/orders/OrderForm";
 import OrderTable from "../features/orders/OrderTable";
 import { useEffect, useState } from "react";
 import {
-  addOrderPayment,
-  clearOrderPayment,
   createOrder as createOrderApi,
   deleteOrder,
   fetchDueOrders,
@@ -13,17 +11,26 @@ import {
 } from "../api/orders.api";
 import { fetchCustomers } from "../api/customers.api";
 import { fetchMeasurementTemplates } from "../api/measurements.api";
+import { getPayments, addPayments } from "../api/payments.api";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { DollarSign, Package, Plus, User, X, XIcon } from "lucide-react";
+import { Package, Plus, User, Wallet, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import ConfirmDialog from "@/components/confirmDialog";
 import { LuxurySelect } from "@/components/LuxurySelect";
 import OrdersSkeleton from "@/components/skeletons/OrdersPageSkeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { AddPaymentDialog, PaymentHistoryModal } from "@/features/payments/PaymentLedger";
+import PaymentLedgerSection from "@/features/payments/PaymentLedgerSection";
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
@@ -37,6 +44,7 @@ export default function OrdersPage() {
   const [deliveryDate, setDeliveryDate] = useState(null);
   const [clothProvided, setClothProvided] = useState(false);
   const [loading, setLoading] = useState(true);
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
 
@@ -44,21 +52,28 @@ export default function OrdersPage() {
 
   const [templates, setTemplates] = useState({});
   const [measurements, setMeasurements] = useState({});
+
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [viewOrderDialog, setViewOrderDialog] = useState(false);
+
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
+
   const [measurementHistory, setMeasurementHistory] = useState([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
 
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
-  const [viewOrderDialog, setViewOrderDialog] = useState(false);
   const [editOrderDialog, setEditOrderDialog] = useState(false);
   const [deleteOrderDialog, setDeleteOrderDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+
+
+  const [paymentOrder, setPaymentOrder] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showPaymentHistory, setShowPaymentHistory] = useState(false);
+  const [paymentHistory, setPaymentHistory] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
-  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const [paymentInputAmount, setPaymentInputAmount] = useState("");
-  const [paymentErrors, setPaymentErrors] = useState({});
-  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
 
   const statusColors = {
     PENDING: "bg-orange-100 text-orange-700 border-orange-200",
@@ -147,6 +162,121 @@ export default function OrdersPage() {
     }
   }
 
+  const normalizePayments = (payments = []) => {
+    if (!Array.isArray(payments)) return [];
+
+    return payments.map((payment) => ({
+      ...payment,
+      amount: Number(payment.amount) || 0,
+      payment_method: payment.payment_method || payment.method || "CASH",
+      payment_date: payment.payment_date || payment.date || "",
+    }));
+  };
+
+  const getOrderCreatedDate = (value) => {
+    if (!value) return "";
+
+    if (/^\d{2}-\d{2}-\d{4}$/.test(value)) {
+      return value;
+    }
+
+    try {
+      const parsed = parseISO(String(value));
+      if (isValid(parsed)) {
+        return format(parsed, "dd-MM-yyyy");
+      }
+    } catch {
+      // Fallback below for non-ISO values.
+    }
+
+    const fallback = new Date(String(value));
+    if (Number.isNaN(fallback.getTime())) {
+      return "";
+    }
+
+    return format(fallback, "dd-MM-yyyy");
+  };
+
+  const buildDisplayPayments = (order, payments = []) => {
+    const normalized = normalizePayments(payments);
+    const orderPaid = Number(order?.advance_paid) || 0;
+    const ledgerPaid = normalized.reduce(
+      (sum, payment) => sum + (Number(payment.amount) || 0),
+      0,
+    );
+
+    const inferredInitialAmount = Math.max(orderPaid - ledgerPaid, 0);
+
+    if (inferredInitialAmount <= 0) {
+      return normalized;
+    }
+
+    return [
+      ...normalized,
+      {
+        payment_id: `initial-${order?.order_id ?? "payment"}`,
+        amount: inferredInitialAmount,
+        payment_method: "ADVANCE",
+        payment_date: getOrderCreatedDate(order?.created_at) || "Order Created",
+      },
+    ];
+  };
+
+  async function openPaymentHistory(order) {
+    try {
+      const res = await getPayments(order.order_id);
+      setPaymentHistory(buildDisplayPayments(order, res.payments));
+    } catch {
+      setPaymentHistory(buildDisplayPayments(order, []));
+      toast.error("Failed to load payments");
+    }
+  }
+
+  async function addPayment(amount, method) {
+    if (!selectedOrderId) {
+      toast.error("Order not selected for payment");
+      return;
+    }
+
+    try {
+      await addPayments(selectedOrderId, {
+        amount: Number(amount),
+        method,
+      });
+
+      toast.success("Payment added");
+
+      const activeOrder = paymentOrder?.order_id === selectedOrderId
+        ? paymentOrder
+        : selectedOrder?.order_id === selectedOrderId
+          ? selectedOrder
+          : null;
+
+      const updatedOrder = activeOrder
+        ? {
+          ...activeOrder,
+          advance_paid: (Number(activeOrder.advance_paid) || 0) + Number(amount),
+        }
+        : activeOrder;
+
+      if (updatedOrder) {
+        setPaymentOrder((prev) =>
+          prev?.order_id === updatedOrder.order_id ? updatedOrder : prev,
+        );
+        setSelectedOrder((prev) =>
+          prev?.order_id === updatedOrder.order_id ? updatedOrder : prev,
+        );
+      }
+
+      await openPaymentHistory(updatedOrder || activeOrder || { order_id: selectedOrderId, advance_paid: 0 });
+
+      setShowPaymentModal(false);
+      loadData();
+    } catch {
+      toast.error("Failed to add payment");
+    }
+  }
+
   function resetForm() {
     setMobile("");
     setSuitType("");
@@ -155,54 +285,6 @@ export default function OrdersPage() {
     setDeliveryDate(null);
     setClothProvided(false);
     setMeasurements({});
-  }
-
-  async function handleAddPayment(orderId) {
-    const newErrors = {};
-
-    if (!paymentInputAmount || Number(paymentInputAmount) <= 0) {
-      newErrors.paymentInputAmount = "Enter a valid payment amount";
-    }
-
-    if (Number(paymentInputAmount) > selectedOrder.balance) {
-      newErrors.paymentInputAmount = "Amount exceeds remaining balance";
-    }
-
-    setPaymentErrors(newErrors);
-
-    if (Object.keys(newErrors).length > 0) {
-      return;
-    }
-
-    try {
-      await addOrderPayment(orderId, Number(paymentInputAmount));
-
-      toast.success("Payment added successfully");
-      setPaymentDialogOpen(false);
-      setPaymentInputAmount("");
-      setPaymentErrors({});
-      loadData();
-    } catch (error) {
-      toast.error("Failed to add payment", {
-        description: error.message,
-      });
-    }
-  }
-
-  async function handleClearPayment(orderId) {
-    try {
-      await clearOrderPayment(orderId);
-
-      toast.success("Payment cleared successfully");
-      setPaymentDialogOpen(false);
-      setPaymentInputAmount("");
-      setPaymentErrors({});
-      loadData();
-    } catch (error) {
-      toast.error("Failed to clear payment", {
-        description: error.message,
-      });
-    }
   }
 
   async function updateStatus(id, status) {
@@ -254,7 +336,7 @@ export default function OrdersPage() {
       toast.success("Order deleted successfully");
       setDeleteOrderDialog(false);
       loadData();
-    } catch (err) {
+    } catch {
       toast.error("Failed to delete order");
     }
     setIsDeleting(false);
@@ -287,9 +369,11 @@ export default function OrdersPage() {
     setDeleteOrderDialog(true);
   };
 
-  const handlePayOrder = (order) => {
+  const handlePayOrder = async (order) => {
+    setPaymentOrder(order);
     setSelectedOrder(order);
-    setPaymentDialogOpen(true);
+    setSelectedOrderId(order.order_id);
+    await openPaymentHistory(order);
   };
 
   useEffect(() => {
@@ -391,12 +475,56 @@ export default function OrdersPage() {
         onEditOrder={handleEditOrder}
         onDeleteOrder={handleDeleteOrder}
         onPayOrder={handlePayOrder}
-        paymentDialogOpen={paymentDialogOpen}
-        setPaymentDialogOpen={setPaymentDialogOpen}
-        paymentInputAmount={paymentInputAmount}
-        setPaymentInputAmount={setPaymentInputAmount}
-        handleAddPayment={handleAddPayment}
-        handleClearPayment={handleClearPayment}
+        showPaymentModal={showPaymentModal}
+      />
+
+      <AddPaymentDialog
+        open={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onAddPayment={addPayment}
+        currentPaid={paymentOrder?.advance_paid || 0}
+        totalPrice={paymentOrder?.price || 0}
+        remainingBalance={(paymentOrder?.price || 0) - (paymentOrder?.advance_paid || 0)}
+      />
+
+      {paymentOrder && (
+        <Dialog
+          open={true}
+          onOpenChange={() => {
+            setPaymentOrder(null);
+            setPaymentHistory([]);
+            setShowPaymentHistory(false);
+          }}
+        >
+          <DialogContent className="max-w-lg max-h-[90vh] rounded-2xl overflow-hidden p-0 flex flex-col">
+            <DialogHeader className="p-2">
+            </DialogHeader>
+
+            <div className="px-6 pb-6 overflow-y-auto flex-1 min-h-0">
+              <PaymentLedgerSection
+                totalPrice={paymentOrder.price}
+                totalPaid={paymentOrder.advance_paid}
+                payments={paymentHistory}
+                maxVisiblePayments={1}
+                onViewFullHistory={() => setShowPaymentHistory(true)}
+                onAddPayment={() => {
+                  setSelectedOrderId(paymentOrder.order_id);
+                  setShowPaymentModal(true);
+                }}
+                showAddButton={true}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      <PaymentHistoryModal
+        open={showPaymentHistory}
+        onClose={() => setShowPaymentHistory(false)}
+        payments={paymentHistory}
+        orderTotal={paymentOrder?.price || 0}
+        orderPaid={paymentOrder?.advance_paid || 0}
+        startingIndex={Math.min(1, paymentHistory.length)}
       />
 
       {viewOrderDialog && selectedOrder && (
@@ -479,38 +607,15 @@ export default function OrdersPage() {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-accent">
-                  <DollarSign className="w-5 h-5" />
-                  <h3 className="font-medium text-lg">Payment Information</h3>
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="p-4 bg-muted/30 rounded-xl">
-                    <p className="text-sm text-muted-foreground mb-1">
-                      Total Price
-                    </p>
-                    <p className="text-xl font-medium text-accent">
-                      ₹{selectedOrder.price}
-                    </p>
-                  </div>
-                  <div className="p-4 bg-muted/30 rounded-xl">
-                    <p className="text-sm text-muted-foreground mb-1">
-                      Advance Paid
-                    </p>
-                    <p className="text-xl font-medium text-green-600">
-                      ₹{selectedOrder.advance_paid}
-                    </p>
-                  </div>
-                  <div className="p-4 bg-muted/30 rounded-xl">
-                    <p className="text-sm text-muted-foreground mb-1">
-                      Balance
-                    </p>
-                    <p className="text-xl font-medium text-orange-600">
-                      ₹{selectedOrder.price - selectedOrder.advance_paid}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              {/* <PaymentLedgerSection
+                totalPrice={selectedOrder.price}
+                totalPaid={selectedOrder.advance_paid}
+                payments={paymentHistory}
+                onAddPayment={() => {
+                  setSelectedOrderId(selectedOrder.order_id);
+                  setShowPaymentModal(true);
+                }}
+                showAddButton={true} /> */}
 
               {selectedOrder.measurement_values && (
                 <div className="space-y-3">
@@ -522,10 +627,10 @@ export default function OrdersPage() {
                       {typeof selectedOrder.measurement_values === "string"
                         ? selectedOrder.measurement_values
                         : JSON.stringify(
-                            selectedOrder.measurement_values,
-                            null,
-                            2,
-                          )}
+                          selectedOrder.measurement_values,
+                          null,
+                          2,
+                        )}
                     </p>
                   </div>
                 </div>
@@ -617,7 +722,19 @@ export default function OrdersPage() {
                     className="rounded-xl opacity-70 cursor-not-allowed"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Payment can only be modified via the Payment Manager.
+                    Payment can only be modified via{" "}
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 text-sm text-accent underline underline-offset-2 hover:text-accent/80"
+                      onClick={async () => {
+                        setEditOrderDialog(false);
+                        await handlePayOrder(selectedOrder);
+                      }}
+                    >
+                      <Wallet className="w-3 h-3" />
+                      Payment Manager
+                    </button>
+                    .
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -673,100 +790,6 @@ export default function OrdersPage() {
                 </Button>
               </div>
             </form>
-          </Card>
-        </div>
-      )}
-
-      {paymentDialogOpen && selectedOrder && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <Card className="p-8 rounded-2xl w-full max-w-md shadow-xl border-border/50">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-serif">Add Payment</h2>
-              <button
-                type="button"
-                onClick={() => {
-                  setPaymentDialogOpen(false);
-                  setPaymentErrors({});
-                }}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <XIcon className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              <div className="bg-muted/30 rounded-xl p-4 space-y-2">
-                <p className="text-sm text-muted-foreground">Order ID</p>
-                <p className="font-medium">
-                  ORD-{String(selectedOrder.order_id).padStart(3, "0")}
-                </p>
-
-                <div className="grid grid-cols-3 gap-3 pt-2">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Total</p>
-                    <p className="font-medium text-accent">
-                      ₹{selectedOrder.price}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-xs text-muted-foreground">Paid</p>
-                    <p className="font-medium text-green-600">
-                      ₹{selectedOrder.advance_paid}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-xs text-muted-foreground">Balance</p>
-                    <p className="font-medium text-orange-600">
-                      ₹{selectedOrder.balance}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Payment Amount (₹)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  placeholder="Enter amount"
-                  value={paymentInputAmount}
-                  onChange={(e) => {
-                    setPaymentInputAmount(e.target.value);
-                    setPaymentErrors((prev) => ({
-                      ...prev,
-                      paymentInputAmount: "",
-                    }));
-                  }}
-                  className="rounded-xl"
-                />
-                {paymentErrors.paymentInputAmount && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {paymentErrors.paymentInputAmount}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1 rounded-xl"
-                  onClick={() => handleAddPayment(selectedOrder.order_id)}
-                >
-                  Add Payment
-                </Button>
-
-                <Button
-                  type="button"
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-xl"
-                  onClick={() => handleClearPayment(selectedOrder.order_id)}
-                >
-                  Clear Balance
-                </Button>
-              </div>
-            </div>
           </Card>
         </div>
       )}
